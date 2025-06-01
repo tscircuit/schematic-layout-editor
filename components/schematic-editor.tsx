@@ -560,7 +560,9 @@ export function SchematicEditor({
                 }
                 strokeWidth={isSelected || editingName === box.id ? 2 : 1}
                 className="cursor-move"
-                transform={`rotate(${box.rotation}, ${worldToScreen(box.x, box.y, currentPanOffset).x}, ${worldToScreen(box.x, box.y, currentPanOffset).y})`}
+                {...(box.type !== "passive" && {
+                  transform: `rotate(${box.rotation}, ${worldToScreen(box.x, box.y, currentPanOffset).x}, ${worldToScreen(box.x, box.y, currentPanOffset).y})`
+                })}
               />
             )}
             {editingName === box.id ? (
