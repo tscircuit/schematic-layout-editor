@@ -12,6 +12,7 @@ export interface Pin {
   id: string
   side: "left" | "right" | "top" | "bottom" | "center"
   index: number
+  marginFromLastPin?: number // Optional margin from previous pin on the same side, defaults to 0.2
 }
 
 export type AnchorSide = "left" | "right" | "top" | "bottom"
