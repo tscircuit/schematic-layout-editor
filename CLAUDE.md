@@ -8,8 +8,8 @@ This is a schematic layout editor for tscircuit that creates reference layouts f
 
 ## Development Commands
 
-- **Start development server**: `bun run dev` or `npm run dev`
-- **Build for production**: `bun run build` or `npm run build`
+- **Start development server**: `bun run dev`
+- **Build for production**: `bun run build`
 - **Format code**: `bun run format` (writes) or `bun run format:check` (check only)
 
 The project uses Biome for formatting

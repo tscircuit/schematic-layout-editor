@@ -67,7 +67,7 @@ export type LayoutPointRef =
       junctionId: string
     }
   | {
-      netId: string
+      netLabelId: string
     }
 
 export interface LaidOutBox {
@@ -99,6 +99,16 @@ export interface LaidOutPath {
 
 export interface LaidOutNetLabel {
   netId: string
+  netLabelId: string
+  anchorPosition: "top" | "bottom" | "left" | "right"
+  x: number
+  y: number
+}
+
+// For parsing imported JSON that might not have netLabelId yet
+export interface ParsedLaidOutNetLabel {
+  netId: string
+  netLabelId?: string
   anchorPosition: "top" | "bottom" | "left" | "right"
   x: number
   y: number
@@ -107,6 +117,18 @@ export interface LaidOutNetLabel {
 export interface CircuitLayoutJson {
   boxes: LaidOutBox[]
   netLabels: Array<LaidOutNetLabel>
+  paths: Array<LaidOutPath>
+  junctions: Array<{
+    junctionId: string
+    x: number
+    y: number
+  }>
+}
+
+// For parsing imported JSON that might have optional netLabelId
+export interface ParsedCircuitLayoutJson {
+  boxes: LaidOutBox[]
+  netLabels: Array<ParsedLaidOutNetLabel>
   paths: Array<LaidOutPath>
   junctions: Array<{
     junctionId: string

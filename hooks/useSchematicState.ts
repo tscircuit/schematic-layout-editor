@@ -8,6 +8,7 @@ import {
   type Connection,
   type ConnectionEndpointSource,
   type CircuitLayoutJson,
+  type ParsedCircuitLayoutJson,
   type LaidOutBox,
   type LaidOutNetLabel,
   type LaidOutPath,
@@ -625,7 +626,8 @@ export function useSchematicState() {
     const laidOutNetLabels: LaidOutNetLabel[] = boxes
       .filter((box) => box.type === "net-label")
       .map((box) => ({
-        netId: box.name, // Use box name as netId
+        netId: box.name, // Use box name as netId (displayed label)
+        netLabelId: box.id, // Use box id as netLabelId (unique identifier)
         anchorPosition: box.anchorSide || "left",
         x: box.x,
         y: -box.y, // Convert to standard Y+ up coordinate system
@@ -639,7 +641,7 @@ export function useSchematicState() {
           const fromPin = fromBox?.pins.find((p) => p.id === conn.from.pinId)
           if (fromBox && fromPin) {
             if (fromBox.type === "net-label") {
-              return { netId: fromBox.name }
+              return { netLabelId: fromBox.id }
             } else {
               return {
                 boxId: fromBox.name, // Use box name as boxId
@@ -660,7 +662,7 @@ export function useSchematicState() {
           const toPin = toBox?.pins.find((p) => p.id === conn.to.pinId)
           if (toBox && toPin) {
             if (toBox.type === "net-label") {
-              return { netId: toBox.name }
+              return { netLabelId: toBox.id }
             } else {
               return {
                 boxId: toBox.name, // Use box name as boxId
@@ -711,9 +713,9 @@ export function useSchematicState() {
   const handleLoadData = useCallback((jsonData: string) => {
     try {
       // Try to parse as new format first
-      let loadedData: CircuitLayoutJson | SchematicLayout
+      let loadedData: ParsedCircuitLayoutJson | SchematicLayout
       try {
-        loadedData = JSON.parse(jsonData) as CircuitLayoutJson
+        loadedData = JSON.parse(jsonData) as ParsedCircuitLayoutJson
         // Check if it's the new format by looking for the structure
         if (
           loadedData &&
@@ -723,7 +725,7 @@ export function useSchematicState() {
           "pins" in loadedData.boxes[0]
         ) {
           // New format detected
-          handleLoadNewFormat(loadedData as CircuitLayoutJson)
+          handleLoadNewFormat(loadedData as ParsedCircuitLayoutJson)
           return
         }
       } catch (e) {
@@ -750,7 +752,7 @@ export function useSchematicState() {
     }
   }, [])
 
-  const handleLoadNewFormat = useCallback((loadedData: CircuitLayoutJson) => {
+  const handleLoadNewFormat = useCallback((loadedData: ParsedCircuitLayoutJson) => {
     const loadedBoxesState: Box[] = []
     let maxChipNum = 0,
       maxPassiveNum = 0
@@ -848,10 +850,16 @@ export function useSchematicState() {
       })
     })
 
-    // Load net labels
+    // Load net labels and create mapping for netLabelId to actual box ID
     let maxNetLabelNum = 0
+    const netLabelIdMapping = new Map<string, string>()
     loadedData.netLabels.forEach((nl, index) => {
       const newId = `loaded-nl-${uuidv4()}-${index}`
+      
+      // Map the original netLabelId to our new box ID
+      // For backward compatibility, use a fallback if netLabelId is missing
+      const netLabelId = nl.netLabelId || `fallback-netlabel-${index}`
+      netLabelIdMapping.set(netLabelId, newId)
 
       // Extract number from netId for counter tracking
       if (nl.netId.startsWith("NET")) {
@@ -904,9 +912,28 @@ export function useSchematicState() {
         let fromTarget: ConnectionEndpointSource
         if ("junctionId" in p.from) {
           fromTarget = { type: "junction", junctionId: p.from.junctionId }
-        } else if ("netId" in p.from) {
+        } else if ("netLabelId" in p.from) {
+          const actualBoxId = netLabelIdMapping.get(p.from.netLabelId)
           const netLabelBox = loadedBoxesState.find(
-            (b) => b.type === "net-label" && b.name === p.from.netId,
+            (b) => b.type === "net-label" && b.id === actualBoxId,
+          )
+          if (netLabelBox) {
+            fromTarget = {
+              type: "pin",
+              boxId: netLabelBox.id,
+              pinId: netLabelBox.pins[0].id,
+            }
+          } else {
+            fromTarget = {
+              type: "pin",
+              boxId: "unknown-netlabel",
+              pinId: "unknown-pin",
+            }
+          }
+        } else if ("netId" in p.from) {
+          // Backward compatibility for old format using netId
+          const netLabelBox = loadedBoxesState.find(
+            (b) => b.type === "net-label" && b.name === (p.from as any).netId,
           )
           if (netLabelBox) {
             fromTarget = {
@@ -972,9 +999,28 @@ export function useSchematicState() {
         let toTarget: ConnectionEndpointSource
         if ("junctionId" in p.to) {
           toTarget = { type: "junction", junctionId: p.to.junctionId }
-        } else if ("netId" in p.to) {
+        } else if ("netLabelId" in p.to) {
+          const actualBoxId = netLabelIdMapping.get(p.to.netLabelId)
           const netLabelBox = loadedBoxesState.find(
-            (b) => b.type === "net-label" && b.name === p.to.netId,
+            (b) => b.type === "net-label" && b.id === actualBoxId,
+          )
+          if (netLabelBox) {
+            toTarget = {
+              type: "pin",
+              boxId: netLabelBox.id,
+              pinId: netLabelBox.pins[0].id,
+            }
+          } else {
+            toTarget = {
+              type: "pin",
+              boxId: "unknown-netlabel",
+              pinId: "unknown-pin",
+            }
+          }
+        } else if ("netId" in p.to) {
+          // Backward compatibility for old format using netId
+          const netLabelBox = loadedBoxesState.find(
+            (b) => b.type === "net-label" && b.name === (p.to as any).netId,
           )
           if (netLabelBox) {
             toTarget = {
