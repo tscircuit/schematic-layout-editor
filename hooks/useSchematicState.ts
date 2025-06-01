@@ -526,8 +526,16 @@ export function useSchematicState() {
   // Helper function to get pin number from pin ID and side
   const getPinNumber = (pin: Pin, box: Box): number => {
     if (box.type === "passive") {
-      // For passives, pin 1 is top/left, pin 2 is bottom/right
-      return pin.side === "top" || pin.side === "left" ? 1 : 2
+      // Passives have two pins. Pin numbers follow a counter-clockwise order
+      // around the part based on its rotation. When horizontal, pin 1 is left
+      // and pin 2 is right. When vertical, pin 1 is bottom and pin 2 is top.
+      const flipped = box.rotation === 180 || box.rotation === 270
+      const pin1Side = flipped ? "top" : "bottom"
+      const isPin1 =
+        pin.side === pin1Side ||
+        (pin.side === "left" && pin1Side === "bottom") ||
+        (pin.side === "right" && pin1Side === "top")
+      return isPin1 ? 1 : 2
     } else if (box.type === "chip") {
       // For chips, number pins sequentially by side
       const pinsOnSameSide = box.pins
@@ -920,18 +928,16 @@ export function useSchematicState() {
             let targetPin = fromBox.pins[0] // Default fallback
 
             if (fromBox.type === "passive") {
-              // For passives: pin 1 = top/left, pin 2 = bottom/right
-              if (targetPinNumber === 1) {
-                targetPin =
-                  fromBox.pins.find(
-                    (pin) => pin.side === "top" || pin.side === "left",
-                  ) || fromBox.pins[0]
-              } else {
-                targetPin =
-                  fromBox.pins.find(
-                    (pin) => pin.side === "bottom" || pin.side === "right",
-                  ) || fromBox.pins[0]
-              }
+              const flipped = fromBox.rotation === 180 || fromBox.rotation === 270
+              const pin1Side = flipped ? "top" : "bottom"
+              const desiredSide = targetPinNumber === 1 ? pin1Side : pin1Side === "top" ? "bottom" : "top"
+              targetPin =
+                fromBox.pins.find(
+                  (pin) =>
+                    pin.side === desiredSide ||
+                    (desiredSide === "bottom" && pin.side === "left") ||
+                    (desiredSide === "top" && pin.side === "right"),
+                ) || fromBox.pins[0]
             } else {
               // For chips: find by sequential numbering
               const sortedPins = [...fromBox.pins].sort((a, b) => {
@@ -987,17 +993,16 @@ export function useSchematicState() {
             let targetPin = toBox.pins[0]
 
             if (toBox.type === "passive") {
-              if (targetPinNumber === 1) {
-                targetPin =
-                  toBox.pins.find(
-                    (pin) => pin.side === "top" || pin.side === "left",
-                  ) || toBox.pins[0]
-              } else {
-                targetPin =
-                  toBox.pins.find(
-                    (pin) => pin.side === "bottom" || pin.side === "right",
-                  ) || toBox.pins[0]
-              }
+              const flipped = toBox.rotation === 180 || toBox.rotation === 270
+              const pin1Side = flipped ? "top" : "bottom"
+              const desiredSide = targetPinNumber === 1 ? pin1Side : pin1Side === "top" ? "bottom" : "top"
+              targetPin =
+                toBox.pins.find(
+                  (pin) =>
+                    pin.side === desiredSide ||
+                    (desiredSide === "bottom" && pin.side === "left") ||
+                    (desiredSide === "top" && pin.side === "right"),
+                ) || toBox.pins[0]
             } else {
               const sortedPins = [...toBox.pins].sort((a, b) => {
                 const sideOrder = { left: 0, right: 1, top: 2, bottom: 3 }
