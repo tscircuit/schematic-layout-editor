@@ -82,7 +82,7 @@ export function useSchematicState() {
       const chipId = `chip-${uuidv4()}`
 
       const initialPins: Box["pins"] = []
-      const defaultPinCount = 3
+      const defaultPinCount = 2
       for (let i = 0; i < defaultPinCount; i++) {
         initialPins.push({
           id: `pin-${uuidv4()}-L${i}`,
