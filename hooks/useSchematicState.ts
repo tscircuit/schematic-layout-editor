@@ -77,8 +77,6 @@ export function useSchematicState() {
 
   const addChip = useCallback(
     (worldPos: { x: number; y: number }) => {
-      const targetCenterX = snapToGrid(worldPos.x)
-      const targetCenterY = snapToGrid(worldPos.y)
       const chipId = `chip-${uuidv4()}`
 
       const initialPins: Box["pins"] = []
@@ -100,10 +98,16 @@ export function useSchematicState() {
       const calculatedHeight = defaultPinCount * GRID_SIZE + GRID_SIZE
       const initialHeight = Math.max(GRID_SIZE * 2, calculatedHeight)
 
+      // Calculate top-left position from center, then snap to grid (same as dragging)
+      const targetTopLeftX = worldPos.x - initialWidth / 2
+      const targetTopLeftY = worldPos.y - initialHeight / 2
+      const snappedX = snapToGrid(targetTopLeftX)
+      const snappedY = snapToGrid(targetTopLeftY)
+
       const newBox: Box = {
         id: chipId,
-        x: targetCenterX - initialWidth / 2,
-        y: targetCenterY - initialHeight / 2,
+        x: snappedX,
+        y: snappedY,
         width: initialWidth,
         height: initialHeight,
         pins: initialPins,
