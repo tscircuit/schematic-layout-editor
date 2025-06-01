@@ -526,8 +526,8 @@ export function useSchematicState() {
   // Helper function to get pin number from pin ID and side
   const getPinNumber = (pin: Pin, box: Box): number => {
     if (box.type === "passive") {
-      // For passives, pin 1 is top/left, pin 2 is bottom/right
-      return pin.side === "top" || pin.side === "left" ? 1 : 2
+      // For passives, pin1 is bottom/left, pin2 is top/right
+      return pin.side === "bottom" || pin.side === "left" ? 1 : 2
     } else if (box.type === "chip") {
       // For chips, number pins sequentially by side
       const pinsOnSameSide = box.pins
@@ -920,16 +920,16 @@ export function useSchematicState() {
             let targetPin = fromBox.pins[0] // Default fallback
 
             if (fromBox.type === "passive") {
-              // For passives: pin 1 = top/left, pin 2 = bottom/right
+              // For passives: pin1 = bottom/left, pin2 = top/right
               if (targetPinNumber === 1) {
                 targetPin =
                   fromBox.pins.find(
-                    (pin) => pin.side === "top" || pin.side === "left",
+                    (pin) => pin.side === "bottom" || pin.side === "left",
                   ) || fromBox.pins[0]
               } else {
                 targetPin =
                   fromBox.pins.find(
-                    (pin) => pin.side === "bottom" || pin.side === "right",
+                    (pin) => pin.side === "top" || pin.side === "right",
                   ) || fromBox.pins[0]
               }
             } else {
@@ -990,12 +990,12 @@ export function useSchematicState() {
               if (targetPinNumber === 1) {
                 targetPin =
                   toBox.pins.find(
-                    (pin) => pin.side === "top" || pin.side === "left",
+                    (pin) => pin.side === "bottom" || pin.side === "left",
                   ) || toBox.pins[0]
               } else {
                 targetPin =
                   toBox.pins.find(
-                    (pin) => pin.side === "bottom" || pin.side === "right",
+                    (pin) => pin.side === "top" || pin.side === "right",
                   ) || toBox.pins[0]
               }
             } else {
