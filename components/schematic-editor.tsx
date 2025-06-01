@@ -709,7 +709,43 @@ export function SchematicEditor({
                     fill="#9ca3af"
                     className="select-none pointer-events-none"
                   >
-                    {pin.index + 1}
+                    {(() => {
+                      // Calculate CCW pin number starting from top-left
+                      if (box.type !== "chip") return pin.index + 1
+                      
+                      const leftPins = box.pins.filter(p => p.side === "left").sort((a, b) => a.index - b.index)
+                      const rightPins = box.pins.filter(p => p.side === "right").sort((a, b) => b.index - a.index) // bottom to top
+                      const topPins = box.pins.filter(p => p.side === "top").sort((a, b) => a.index - b.index)
+                      const bottomPins = box.pins.filter(p => p.side === "bottom").sort((a, b) => b.index - a.index) // right to left
+                      
+                      let pinNumber = 1
+                      
+                      // Left side (top to bottom)
+                      for (const leftPin of leftPins) {
+                        if (leftPin.id === pin.id) return pinNumber
+                        pinNumber++
+                      }
+                      
+                      // Bottom side (left to right) 
+                      for (const bottomPin of bottomPins) {
+                        if (bottomPin.id === pin.id) return pinNumber
+                        pinNumber++
+                      }
+                      
+                      // Right side (bottom to top)
+                      for (const rightPin of rightPins) {
+                        if (rightPin.id === pin.id) return pinNumber
+                        pinNumber++
+                      }
+                      
+                      // Top side (right to left)
+                      for (const topPin of topPins) {
+                        if (topPin.id === pin.id) return pinNumber
+                        pinNumber++
+                      }
+                      
+                      return pin.index + 1 // fallback
+                    })()}
                   </text>
                 </g>
               )
