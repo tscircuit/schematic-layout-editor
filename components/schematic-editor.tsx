@@ -646,11 +646,30 @@ export function SchematicEditor({
                 junctions,
               )
               if (!pinPos) return null
+              
+              // Calculate offset to move pin slightly inside the box
+              const insetAmount = 8 // pixels
+              let offsetX = 0, offsetY = 0
+              
+              if (box.type === "chip") {
+                // For chips, move pins inward based on their side
+                if (pin.side === "left") offsetX = insetAmount
+                else if (pin.side === "right") offsetX = -insetAmount
+                else if (pin.side === "top") offsetY = insetAmount
+                else if (pin.side === "bottom") offsetY = -insetAmount
+              }
+              // For passives and net-labels, keep pins at their original position
+              
               const pinScreen = worldToScreen(
                 pinPos.x,
                 pinPos.y,
                 currentPanOffset,
               )
+              
+              // Apply the inset offset
+              const displayPinX = pinScreen.x + offsetX
+              const displayPinY = pinScreen.y + offsetY
+              
               const pinFillColor =
                 connectionStart?.type === "pin" &&
                 connectionStart.pinId === pin.id
@@ -671,7 +690,7 @@ export function SchematicEditor({
                     className="cursor-pointer hover:opacity-30"
                     onMouseDown={(e) => handlePinClick(e, box.id, pin.id)}
                   />
-                  {/* Original visible pin circle */}
+                  {/* Visible pin circle - keep at original position */}
                   <circle
                     cx={pinScreen.x}
                     cy={pinScreen.y}
@@ -680,6 +699,18 @@ export function SchematicEditor({
                     className="cursor-pointer hover:fill-blue-500 pointer-events-none"
                     onMouseDown={(e) => handlePinClick(e, box.id, pin.id)}
                   />
+                  {/* Pin number text - moved inward */}
+                  <text
+                    x={displayPinX}
+                    y={displayPinY}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="8"
+                    fill="#9ca3af"
+                    className="select-none pointer-events-none"
+                  >
+                    {pin.index + 1}
+                  </text>
                 </g>
               )
             })}
