@@ -4,6 +4,7 @@ import { Toolbar } from "@/components/toolbar"
 import { SchematicEditor } from "@/components/schematic-editor"
 import { CoordinateDisplay } from "@/components/coordinate-display"
 import { LoadDialog } from "@/components/load-dialog"
+import { PinMarginDialog } from "@/components/pin-margin-dialog"
 import { useSchematicState } from "@/hooks/useSchematicState"
 import type { Tool } from "@/types/schematic"
 
@@ -47,11 +48,13 @@ export default function GridDrawingAppPage() {
     clearSelections,
     handleDownload,
     handleLoadData,
+    updatePinMargins,
   } = useSchematicState()
 
   const [selectedTool, setSelectedTool] = useState<Tool>("select")
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [showLoadDialog, setShowLoadDialog] = useState(false)
+  const [showPinMarginDialog, setShowPinMarginDialog] = useState(false)
 
   // Initialize pan offset to center (0,0) on screen
   useEffect(() => {
@@ -63,8 +66,8 @@ export default function GridDrawingAppPage() {
     }
 
     initializePanOffset()
-    window.addEventListener('resize', initializePanOffset)
-    return () => window.removeEventListener('resize', initializePanOffset)
+    window.addEventListener("resize", initializePanOffset)
+    return () => window.removeEventListener("resize", initializePanOffset)
   }, [])
 
   // Effect to clear connection state if tool changes away from "connect"
@@ -163,6 +166,7 @@ export default function GridDrawingAppPage() {
         }
         onDownload={handleDownload}
         onShowLoadDialog={() => setShowLoadDialog(true)}
+        onShowPinMarginDialog={() => setShowPinMarginDialog(true)}
       />
       <SchematicEditor
         boxes={boxes}
@@ -208,6 +212,12 @@ export default function GridDrawingAppPage() {
         isOpen={showLoadDialog}
         onOpenChange={setShowLoadDialog}
         onLoadData={handleLoadData}
+      />
+      <PinMarginDialog
+        isOpen={showPinMarginDialog}
+        onOpenChange={setShowPinMarginDialog}
+        selectedBox={boxes.find((b) => b.id === selectedBoxId) || null}
+        onUpdatePinMargins={updatePinMargins}
       />
     </div>
   )

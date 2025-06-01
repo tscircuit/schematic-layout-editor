@@ -96,8 +96,7 @@ export function useSchematicState() {
       }
 
       const initialWidth = GRID_SIZE * 4
-      const calculatedHeight = defaultPinCount * GRID_SIZE + GRID_SIZE
-      const initialHeight = Math.max(GRID_SIZE * 2, calculatedHeight)
+      const initialHeight = calculateChipHeight(initialPins)
 
       // Calculate top-left position from center, then snap to grid (same as dragging)
       const targetTopLeftX = worldPos.x - initialWidth / 2
@@ -368,16 +367,7 @@ export function useSchematicState() {
             }
             const newPins = [...box.pins, newPin]
 
-            const leftPinsCount = newPins.filter(
-              (p) => p.side === "left",
-            ).length
-            const rightPinsCount = newPins.filter(
-              (p) => p.side === "right",
-            ).length
-            const maxPinsPerSide = Math.max(leftPinsCount, rightPinsCount)
-
-            const calculatedHeight = maxPinsPerSide * GRID_SIZE + GRID_SIZE
-            const newHeight = Math.max(GRID_SIZE * 2, calculatedHeight)
+            const newHeight = calculateChipHeight(newPins)
 
             return { ...box, pins: newPins, height: newHeight }
           }
@@ -438,6 +428,18 @@ export function useSchematicState() {
     },
     [],
   )
+
+  const updatePinMargins = useCallback((boxId: string, updatedPins: Pin[]) => {
+    setBoxes((prevBoxes) =>
+      prevBoxes.map((box) => {
+        if (box.id === boxId && box.type === "chip") {
+          const newHeight = calculateChipHeight(updatedPins)
+          return { ...box, pins: updatedPins, height: newHeight }
+        }
+        return box
+      }),
+    )
+  }, [])
 
   useEffect(() => {
     setConnections((prevConns) =>
@@ -532,6 +534,82 @@ export function useSchematicState() {
     clearSelections,
     deleteSelected,
   ])
+
+  // Helper function to calculate chip height based on pin margins
+  const calculateChipHeight = (pins: Pin[]): number => {
+    const leftPins = pins
+      .filter((p) => p.side === "left")
+      .sort((a, b) => a.index - b.index)
+    const rightPins = pins
+      .filter((p) => p.side === "right")
+      .sort((a, b) => a.index - b.index)
+
+    const calculateSideHeight = (sidePins: Pin[]): number => {
+      if (sidePins.length === 0) return 0
+      let totalHeight = GRID_SIZE // Base margin from top
+      for (let i = 1; i < sidePins.length; i++) {
+        const pin = sidePins[i]
+        const margin = pin.marginFromLastPin ?? GRID_SIZE
+        totalHeight += margin
+      }
+      totalHeight += GRID_SIZE // Base margin to bottom
+      return totalHeight
+    }
+
+    const leftHeight = calculateSideHeight(leftPins)
+    const rightHeight = calculateSideHeight(rightPins)
+    const maxHeight = Math.max(leftHeight, rightHeight)
+
+    return Math.max(GRID_SIZE * 2, maxHeight)
+  }
+
+  // Helper function to compute pin margins from actual pin positions
+  const computePinMarginsFromPositions = (
+    pins: Array<{ pinNumber: number; x: number; y: number }>,
+    box: LaidOutBox,
+  ): Pin[] => {
+    const result: Pin[] = []
+
+    // Create pins for left side
+    const leftPins = pins
+      .filter((p) => p.x === box.centerX - (GRID_SIZE * 4) / 2)
+      .sort((a, b) => a.y - b.y)
+    for (let i = 0; i < leftPins.length; i++) {
+      const pin = leftPins[i]
+      let marginFromLastPin: number | undefined
+      if (i > 0) {
+        const prevPin = leftPins[i - 1]
+        marginFromLastPin = Math.abs(pin.y - prevPin.y)
+      }
+      result.push({
+        id: `pin-loaded-L${i}`,
+        side: "left",
+        index: i,
+        marginFromLastPin,
+      })
+    }
+
+    // Create pins for right side
+    const rightPins = pins
+      .filter((p) => p.x === box.centerX + (GRID_SIZE * 4) / 2)
+      .sort((a, b) => a.y - b.y)
+    for (let i = 0; i < rightPins.length; i++) {
+      const pin = rightPins[i]
+      let marginFromLastPin: number | undefined
+      if (i > 0) {
+        const prevPin = rightPins[i - 1]
+        marginFromLastPin = Math.abs(pin.y - prevPin.y)
+      }
+      result.push({
+        id: `pin-loaded-R${i}`,
+        side: "right",
+        index: i,
+        marginFromLastPin,
+      })
+    }
+
+    return result
+  }
 
   // Helper function to get pin number from pin ID and side
   const getPinNumber = (pin: Pin, box: Box): number => {
@@ -752,234 +830,243 @@ export function useSchematicState() {
     }
   }, [])
 
-  const handleLoadNewFormat = useCallback((loadedData: ParsedCircuitLayoutJson) => {
-    const loadedBoxesState: Box[] = []
-    let maxChipNum = 0,
-      maxPassiveNum = 0
+  const handleLoadNewFormat = useCallback(
+    (loadedData: ParsedCircuitLayoutJson) => {
+      const loadedBoxesState: Box[] = []
+      let maxChipNum = 0,
+        maxPassiveNum = 0
 
-    // Load boxes
-    loadedData.boxes.forEach((b, index) => {
-      const newId = `loaded-box-${uuidv4()}-${index}`
-      let type: "chip" | "passive" = "chip"
-      let isPassiveFromFile = false
-      let width = GRID_SIZE * 4
-      let height = GRID_SIZE * 2
-      let rotation: 0 | 90 | 180 | 270 = 0
+      // Load boxes
+      loadedData.boxes.forEach((b, index) => {
+        const newId = `loaded-box-${uuidv4()}-${index}`
+        let type: "chip" | "passive" = "chip"
+        let isPassiveFromFile = false
+        let width = GRID_SIZE * 4
+        let height = GRID_SIZE * 2
+        let rotation: 0 | 90 | 180 | 270 = 0
 
-      // Determine if it's a passive component
-      if (
-        b.topPinCount === 1 &&
-        b.bottomPinCount === 1 &&
-        b.leftPinCount === 0 &&
-        b.rightPinCount === 0
-      ) {
-        type = "passive"
-        isPassiveFromFile = true
-        width = PASSIVE_BODY_WIDTH
-        height = PASSIVE_PIN_TO_PIN_DIST
-        rotation = 0
-      } else if (
-        b.leftPinCount === 1 &&
-        b.rightPinCount === 1 &&
-        b.topPinCount === 0 &&
-        b.bottomPinCount === 0
-      ) {
-        type = "passive"
-        isPassiveFromFile = true
-        width = PASSIVE_BODY_WIDTH
-        height = PASSIVE_PIN_TO_PIN_DIST
-        rotation = 90
-      } else {
-        type = "chip"
-        isPassiveFromFile = false
-        const maxPinsHorizontal = Math.max(b.leftPinCount, b.rightPinCount)
-        const calculatedChipHeight = maxPinsHorizontal * GRID_SIZE + GRID_SIZE
-        height = Math.max(GRID_SIZE * 2, calculatedChipHeight)
-      }
-
-      let appX = b.centerX
-      let appY = -b.centerY
-      if (type === "chip") {
-        appX = b.centerX - width / 2
-        appY = -b.centerY - height / 2
-      }
-
-      // Create pins based on pin counts
-      const pins: Box["pins"] = []
-      if (type === "passive") {
-        pins.push({ id: `pin-${newId}-T0`, side: "top", index: 0 })
-        pins.push({ id: `pin-${newId}-B0`, side: "bottom", index: 0 })
-      } else if (type === "chip") {
-        for (let i = 0; i < b.leftPinCount; i++)
-          pins.push({ id: `pin-${newId}-L${i}`, side: "left", index: i })
-        for (let i = 0; i < b.rightPinCount; i++)
-          pins.push({ id: `pin-${newId}-R${i}`, side: "right", index: i })
-        for (let i = 0; i < b.topPinCount; i++)
-          pins.push({ id: `pin-${newId}-T${i}`, side: "top", index: i })
-        for (let i = 0; i < b.bottomPinCount; i++)
-          pins.push({ id: `pin-${newId}-B${i}`, side: "bottom", index: i })
-      }
-
-      // Extract number from boxId for counter tracking
-      const nameFromFile = b.boxId
-      if (type === "chip" && nameFromFile.startsWith("U")) {
-        const num = Number.parseInt(nameFromFile.substring(1))
-        if (!isNaN(num)) maxChipNum = Math.max(maxChipNum, num)
-      } else if (type === "passive" && nameFromFile.startsWith("P")) {
-        const num = Number.parseInt(nameFromFile.substring(1))
-        if (!isNaN(num)) maxPassiveNum = Math.max(maxPassiveNum, num)
-      }
-
-      loadedBoxesState.push({
-        id: newId,
-        x:
-          type === "passive" && rotation === 90
-            ? snapToHalfGrid(appX)
-            : snapToGrid(appX),
-        y:
-          type === "passive" && rotation === 0
-            ? snapToHalfGrid(appY)
-            : snapToGrid(appY),
-        width,
-        height,
-        pins,
-        name: nameFromFile,
-        type,
-        isPassive: isPassiveFromFile,
-        rotation,
-      })
-    })
-
-    // Load net labels and create mapping for netLabelId to actual box ID
-    let maxNetLabelNum = 0
-    const netLabelIdMapping = new Map<string, string>()
-    loadedData.netLabels.forEach((nl, index) => {
-      const newId = `loaded-nl-${uuidv4()}-${index}`
-      
-      // Map the original netLabelId to our new box ID
-      // For backward compatibility, use a fallback if netLabelId is missing
-      const netLabelId = nl.netLabelId || `fallback-netlabel-${index}`
-      netLabelIdMapping.set(netLabelId, newId)
-
-      // Extract number from netId for counter tracking
-      if (nl.netId.startsWith("NET")) {
-        const num = Number.parseInt(nl.netId.substring(3))
-        if (!isNaN(num)) maxNetLabelNum = Math.max(maxNetLabelNum, num)
-      }
-
-      loadedBoxesState.push({
-        id: newId,
-        x: snapToGrid(nl.x),
-        y: snapToGrid(-nl.y),
-        width: NET_LABEL_WIDTH,
-        height: NET_LABEL_HEIGHT,
-        pins: [{ id: `pin-${newId}-C0`, side: "center", index: 0 }],
-        name: nl.netId,
-        type: "net-label",
-        isPassive: false,
-        rotation: 0,
-        anchorSide: nl.anchorPosition,
-      })
-    })
-
-    setBoxes(loadedBoxesState)
-    setChipCounter(maxChipNum + 1)
-    setPassiveCounter(maxPassiveNum + 1)
-    setNetLabelCounter(maxNetLabelNum + 1)
-
-    // Load junctions
-    let maxJunctionNum = 0
-    const loadedJunctionsState: Junction[] = loadedData.junctions.map(
-      (j, index) => {
-        maxJunctionNum++
-        return {
-          id: j.junctionId,
-          x: j.x,
-          y: -j.y,
+        // Determine if it's a passive component
+        if (
+          b.topPinCount === 1 &&
+          b.bottomPinCount === 1 &&
+          b.leftPinCount === 0 &&
+          b.rightPinCount === 0
+        ) {
+          type = "passive"
+          isPassiveFromFile = true
+          width = PASSIVE_BODY_WIDTH
+          height = PASSIVE_PIN_TO_PIN_DIST
+          rotation = 0
+        } else if (
+          b.leftPinCount === 1 &&
+          b.rightPinCount === 1 &&
+          b.topPinCount === 0 &&
+          b.bottomPinCount === 0
+        ) {
+          type = "passive"
+          isPassiveFromFile = true
+          width = PASSIVE_BODY_WIDTH
+          height = PASSIVE_PIN_TO_PIN_DIST
+          rotation = 90
+        } else {
+          type = "chip"
+          isPassiveFromFile = false
+          const maxPinsHorizontal = Math.max(b.leftPinCount, b.rightPinCount)
+          const calculatedChipHeight = maxPinsHorizontal * GRID_SIZE + GRID_SIZE
+          height = Math.max(GRID_SIZE * 2, calculatedChipHeight)
         }
-      },
-    )
-    setJunctions(loadedJunctionsState)
-    setJunctionCounter(maxJunctionNum + 1)
 
-    // Load connections
-    const loadedConnectionsState: Connection[] = loadedData.paths.map(
-      (p, index) => {
-        const newId = `loaded-conn-${uuidv4()}-${index}`
-        const appPath = p.points.map((pt) => ({ x: pt.x, y: -pt.y }))
+        let appX = b.centerX
+        let appY = -b.centerY
+        if (type === "chip") {
+          appX = b.centerX - width / 2
+          appY = -b.centerY - height / 2
+        }
 
-        // Convert from LayoutPointRef to ConnectionEndpointSource
-        let fromTarget: ConnectionEndpointSource
-        if ("junctionId" in p.from) {
-          fromTarget = { type: "junction", junctionId: p.from.junctionId }
-        } else if ("netLabelId" in p.from) {
-          const actualBoxId = netLabelIdMapping.get(p.from.netLabelId)
-          const netLabelBox = loadedBoxesState.find(
-            (b) => b.type === "net-label" && b.id === actualBoxId,
-          )
-          if (netLabelBox) {
-            fromTarget = {
-              type: "pin",
-              boxId: netLabelBox.id,
-              pinId: netLabelBox.pins[0].id,
-            }
-          } else {
-            fromTarget = {
-              type: "pin",
-              boxId: "unknown-netlabel",
-              pinId: "unknown-pin",
-            }
+        // Create pins based on pin counts and positions
+        const pins: Box["pins"] = []
+        if (type === "passive") {
+          pins.push({ id: `pin-${newId}-T0`, side: "top", index: 0 })
+          pins.push({ id: `pin-${newId}-B0`, side: "bottom", index: 0 })
+        } else if (type === "chip") {
+          // Use the helper function to compute margins from actual pin positions
+          const computedPins = computePinMarginsFromPositions(b.pins, b)
+          pins.push(...computedPins)
+        }
+
+        // Extract number from boxId for counter tracking
+        const nameFromFile = b.boxId
+        if (type === "chip" && nameFromFile.startsWith("U")) {
+          const num = Number.parseInt(nameFromFile.substring(1))
+          if (!isNaN(num)) maxChipNum = Math.max(maxChipNum, num)
+        } else if (type === "passive" && nameFromFile.startsWith("P")) {
+          const num = Number.parseInt(nameFromFile.substring(1))
+          if (!isNaN(num)) maxPassiveNum = Math.max(maxPassiveNum, num)
+        }
+
+        loadedBoxesState.push({
+          id: newId,
+          x:
+            type === "passive" && rotation === 90
+              ? snapToHalfGrid(appX)
+              : snapToGrid(appX),
+          y:
+            type === "passive" && rotation === 0
+              ? snapToHalfGrid(appY)
+              : snapToGrid(appY),
+          width,
+          height,
+          pins,
+          name: nameFromFile,
+          type,
+          isPassive: isPassiveFromFile,
+          rotation,
+        })
+      })
+
+      // Load net labels and create mapping for netLabelId to actual box ID
+      let maxNetLabelNum = 0
+      const netLabelIdMapping = new Map<string, string>()
+      loadedData.netLabels.forEach((nl, index) => {
+        const newId = `loaded-nl-${uuidv4()}-${index}`
+
+        // Map the original netLabelId to our new box ID
+        // For backward compatibility, use a fallback if netLabelId is missing
+        const netLabelId = nl.netLabelId || `fallback-netlabel-${index}`
+        netLabelIdMapping.set(netLabelId, newId)
+
+        // Extract number from netId for counter tracking
+        if (nl.netId.startsWith("NET")) {
+          const num = Number.parseInt(nl.netId.substring(3))
+          if (!isNaN(num)) maxNetLabelNum = Math.max(maxNetLabelNum, num)
+        }
+
+        loadedBoxesState.push({
+          id: newId,
+          x: snapToGrid(nl.x),
+          y: snapToGrid(-nl.y),
+          width: NET_LABEL_WIDTH,
+          height: NET_LABEL_HEIGHT,
+          pins: [{ id: `pin-${newId}-C0`, side: "center", index: 0 }],
+          name: nl.netId,
+          type: "net-label",
+          isPassive: false,
+          rotation: 0,
+          anchorSide: nl.anchorPosition,
+        })
+      })
+
+      setBoxes(loadedBoxesState)
+      setChipCounter(maxChipNum + 1)
+      setPassiveCounter(maxPassiveNum + 1)
+      setNetLabelCounter(maxNetLabelNum + 1)
+
+      // Load junctions
+      let maxJunctionNum = 0
+      const loadedJunctionsState: Junction[] = loadedData.junctions.map(
+        (j, index) => {
+          maxJunctionNum++
+          return {
+            id: j.junctionId,
+            x: j.x,
+            y: -j.y,
           }
-        } else if ("netId" in p.from) {
-          // Backward compatibility for old format using netId
-          const netLabelBox = loadedBoxesState.find(
-            (b) => b.type === "net-label" && b.name === (p.from as any).netId,
-          )
-          if (netLabelBox) {
-            fromTarget = {
-              type: "pin",
-              boxId: netLabelBox.id,
-              pinId: netLabelBox.pins[0].id,
-            }
-          } else {
-            fromTarget = {
-              type: "pin",
-              boxId: "unknown-netlabel",
-              pinId: "unknown-pin",
-            }
-          }
-        } else if ("boxId" in p.from) {
-          const fromBox = loadedBoxesState.find((b) => b.name === p.from.boxId)
-          if (fromBox && fromBox.pins.length > 0) {
-            // Find pin by pin number
-            const targetPinNumber = p.from.pinNumber
-            let targetPin = fromBox.pins[0] // Default fallback
+        },
+      )
+      setJunctions(loadedJunctionsState)
+      setJunctionCounter(maxJunctionNum + 1)
 
-            if (fromBox.type === "passive") {
-              // For passives: pin1 = bottom/left, pin2 = top/right
-              if (targetPinNumber === 1) {
-                targetPin =
-                  fromBox.pins.find(
-                    (pin) => pin.side === "bottom" || pin.side === "left",
-                  ) || fromBox.pins[0]
-              } else {
-                targetPin =
-                  fromBox.pins.find(
-                    (pin) => pin.side === "top" || pin.side === "right",
-                  ) || fromBox.pins[0]
+      // Load connections
+      const loadedConnectionsState: Connection[] = loadedData.paths.map(
+        (p, index) => {
+          const newId = `loaded-conn-${uuidv4()}-${index}`
+          const appPath = p.points.map((pt) => ({ x: pt.x, y: -pt.y }))
+
+          // Convert from LayoutPointRef to ConnectionEndpointSource
+          let fromTarget: ConnectionEndpointSource
+          if ("junctionId" in p.from) {
+            fromTarget = { type: "junction", junctionId: p.from.junctionId }
+          } else if ("netLabelId" in p.from) {
+            const actualBoxId = netLabelIdMapping.get(p.from.netLabelId)
+            const netLabelBox = loadedBoxesState.find(
+              (b) => b.type === "net-label" && b.id === actualBoxId,
+            )
+            if (netLabelBox) {
+              fromTarget = {
+                type: "pin",
+                boxId: netLabelBox.id,
+                pinId: netLabelBox.pins[0].id,
               }
             } else {
-              // For chips: find by sequential numbering
-              const sortedPins = [...fromBox.pins].sort((a, b) => {
-                const sideOrder = { left: 0, right: 1, top: 2, bottom: 3 }
-                if (a.side !== b.side)
-                  return sideOrder[a.side] - sideOrder[b.side]
-                return a.index - b.index
-              })
-              targetPin = sortedPins[targetPinNumber - 1] || fromBox.pins[0]
+              fromTarget = {
+                type: "pin",
+                boxId: "unknown-netlabel",
+                pinId: "unknown-pin",
+              }
             }
+          } else if ("netId" in p.from) {
+            // Backward compatibility for old format using netId
+            const netLabelBox = loadedBoxesState.find(
+              (b) => b.type === "net-label" && b.name === (p.from as any).netId,
+            )
+            if (netLabelBox) {
+              fromTarget = {
+                type: "pin",
+                boxId: netLabelBox.id,
+                pinId: netLabelBox.pins[0].id,
+              }
+            } else {
+              fromTarget = {
+                type: "pin",
+                boxId: "unknown-netlabel",
+                pinId: "unknown-pin",
+              }
+            }
+          } else if ("boxId" in p.from) {
+            const fromBox = loadedBoxesState.find(
+              (b) => b.name === p.from.boxId,
+            )
+            if (fromBox && fromBox.pins.length > 0) {
+              // Find pin by pin number
+              const targetPinNumber = p.from.pinNumber
+              let targetPin = fromBox.pins[0] // Default fallback
 
-            fromTarget = { type: "pin", boxId: fromBox.id, pinId: targetPin.id }
+              if (fromBox.type === "passive") {
+                // For passives: pin1 = bottom/left, pin2 = top/right
+                if (targetPinNumber === 1) {
+                  targetPin =
+                    fromBox.pins.find(
+                      (pin) => pin.side === "bottom" || pin.side === "left",
+                    ) || fromBox.pins[0]
+                } else {
+                  targetPin =
+                    fromBox.pins.find(
+                      (pin) => pin.side === "top" || pin.side === "right",
+                    ) || fromBox.pins[0]
+                }
+              } else {
+                // For chips: find by sequential numbering
+                const sortedPins = [...fromBox.pins].sort((a, b) => {
+                  const sideOrder = { left: 0, right: 1, top: 2, bottom: 3 }
+                  if (a.side !== b.side)
+                    return sideOrder[a.side] - sideOrder[b.side]
+                  return a.index - b.index
+                })
+                targetPin = sortedPins[targetPinNumber - 1] || fromBox.pins[0]
+              }
+
+              fromTarget = {
+                type: "pin",
+                boxId: fromBox.id,
+                pinId: targetPin.id,
+              }
+            } else {
+              fromTarget = {
+                type: "pin",
+                boxId: "unknown-box-from",
+                pinId: "unknown-pin",
+              }
+            }
           } else {
             fromTarget = {
               type: "pin",
@@ -987,83 +1074,83 @@ export function useSchematicState() {
               pinId: "unknown-pin",
             }
           }
-        } else {
-          fromTarget = {
-            type: "pin",
-            boxId: "unknown-box-from",
-            pinId: "unknown-pin",
-          }
-        }
 
-        // Similar logic for 'to' endpoint
-        let toTarget: ConnectionEndpointSource
-        if ("junctionId" in p.to) {
-          toTarget = { type: "junction", junctionId: p.to.junctionId }
-        } else if ("netLabelId" in p.to) {
-          const actualBoxId = netLabelIdMapping.get(p.to.netLabelId)
-          const netLabelBox = loadedBoxesState.find(
-            (b) => b.type === "net-label" && b.id === actualBoxId,
-          )
-          if (netLabelBox) {
-            toTarget = {
-              type: "pin",
-              boxId: netLabelBox.id,
-              pinId: netLabelBox.pins[0].id,
-            }
-          } else {
-            toTarget = {
-              type: "pin",
-              boxId: "unknown-netlabel",
-              pinId: "unknown-pin",
-            }
-          }
-        } else if ("netId" in p.to) {
-          // Backward compatibility for old format using netId
-          const netLabelBox = loadedBoxesState.find(
-            (b) => b.type === "net-label" && b.name === (p.to as any).netId,
-          )
-          if (netLabelBox) {
-            toTarget = {
-              type: "pin",
-              boxId: netLabelBox.id,
-              pinId: netLabelBox.pins[0].id,
-            }
-          } else {
-            toTarget = {
-              type: "pin",
-              boxId: "unknown-netlabel",
-              pinId: "unknown-pin",
-            }
-          }
-        } else if ("boxId" in p.to) {
-          const toBox = loadedBoxesState.find((b) => b.name === p.to.boxId)
-          if (toBox && toBox.pins.length > 0) {
-            const targetPinNumber = p.to.pinNumber
-            let targetPin = toBox.pins[0]
-
-            if (toBox.type === "passive") {
-              if (targetPinNumber === 1) {
-                targetPin =
-                  toBox.pins.find(
-                    (pin) => pin.side === "bottom" || pin.side === "left",
-                  ) || toBox.pins[0]
-              } else {
-                targetPin =
-                  toBox.pins.find(
-                    (pin) => pin.side === "top" || pin.side === "right",
-                  ) || toBox.pins[0]
+          // Similar logic for 'to' endpoint
+          let toTarget: ConnectionEndpointSource
+          if ("junctionId" in p.to) {
+            toTarget = { type: "junction", junctionId: p.to.junctionId }
+          } else if ("netLabelId" in p.to) {
+            const actualBoxId = netLabelIdMapping.get(p.to.netLabelId)
+            const netLabelBox = loadedBoxesState.find(
+              (b) => b.type === "net-label" && b.id === actualBoxId,
+            )
+            if (netLabelBox) {
+              toTarget = {
+                type: "pin",
+                boxId: netLabelBox.id,
+                pinId: netLabelBox.pins[0].id,
               }
             } else {
-              const sortedPins = [...toBox.pins].sort((a, b) => {
-                const sideOrder = { left: 0, right: 1, top: 2, bottom: 3 }
-                if (a.side !== b.side)
-                  return sideOrder[a.side] - sideOrder[b.side]
-                return a.index - b.index
-              })
-              targetPin = sortedPins[targetPinNumber - 1] || toBox.pins[0]
+              toTarget = {
+                type: "pin",
+                boxId: "unknown-netlabel",
+                pinId: "unknown-pin",
+              }
             }
+          } else if ("netId" in p.to) {
+            // Backward compatibility for old format using netId
+            const netLabelBox = loadedBoxesState.find(
+              (b) => b.type === "net-label" && b.name === (p.to as any).netId,
+            )
+            if (netLabelBox) {
+              toTarget = {
+                type: "pin",
+                boxId: netLabelBox.id,
+                pinId: netLabelBox.pins[0].id,
+              }
+            } else {
+              toTarget = {
+                type: "pin",
+                boxId: "unknown-netlabel",
+                pinId: "unknown-pin",
+              }
+            }
+          } else if ("boxId" in p.to) {
+            const toBox = loadedBoxesState.find((b) => b.name === p.to.boxId)
+            if (toBox && toBox.pins.length > 0) {
+              const targetPinNumber = p.to.pinNumber
+              let targetPin = toBox.pins[0]
 
-            toTarget = { type: "pin", boxId: toBox.id, pinId: targetPin.id }
+              if (toBox.type === "passive") {
+                if (targetPinNumber === 1) {
+                  targetPin =
+                    toBox.pins.find(
+                      (pin) => pin.side === "bottom" || pin.side === "left",
+                    ) || toBox.pins[0]
+                } else {
+                  targetPin =
+                    toBox.pins.find(
+                      (pin) => pin.side === "top" || pin.side === "right",
+                    ) || toBox.pins[0]
+                }
+              } else {
+                const sortedPins = [...toBox.pins].sort((a, b) => {
+                  const sideOrder = { left: 0, right: 1, top: 2, bottom: 3 }
+                  if (a.side !== b.side)
+                    return sideOrder[a.side] - sideOrder[b.side]
+                  return a.index - b.index
+                })
+                targetPin = sortedPins[targetPinNumber - 1] || toBox.pins[0]
+              }
+
+              toTarget = { type: "pin", boxId: toBox.id, pinId: targetPin.id }
+            } else {
+              toTarget = {
+                type: "pin",
+                boxId: "unknown-box-to",
+                pinId: "unknown-pin",
+              }
+            }
           } else {
             toTarget = {
               type: "pin",
@@ -1071,25 +1158,20 @@ export function useSchematicState() {
               pinId: "unknown-pin",
             }
           }
-        } else {
-          toTarget = {
-            type: "pin",
-            boxId: "unknown-box-to",
-            pinId: "unknown-pin",
-          }
-        }
 
-        return {
-          id: newId,
-          from: fromTarget,
-          to: toTarget,
-          path: appPath,
-          label: "",
-        }
-      },
-    )
-    setConnections(loadedConnectionsState)
-  }, [])
+          return {
+            id: newId,
+            from: fromTarget,
+            to: toTarget,
+            path: appPath,
+            label: "",
+          }
+        },
+      )
+      setConnections(loadedConnectionsState)
+    },
+    [],
+  )
 
   const handleLoadLegacyFormat = useCallback((loadedData: SchematicLayout) => {
     const loadedBoxesState: Box[] = []
@@ -1356,5 +1438,6 @@ export function useSchematicState() {
     clearSelections,
     handleDownload,
     handleLoadData,
+    updatePinMargins,
   }
 }

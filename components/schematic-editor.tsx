@@ -561,7 +561,7 @@ export function SchematicEditor({
                 strokeWidth={isSelected || editingName === box.id ? 2 : 1}
                 className="cursor-move"
                 {...(box.type !== "passive" && {
-                  transform: `rotate(${box.rotation}, ${worldToScreen(box.x, box.y, currentPanOffset).x}, ${worldToScreen(box.x, box.y, currentPanOffset).y})`
+                  transform: `rotate(${box.rotation}, ${worldToScreen(box.x, box.y, currentPanOffset).x}, ${worldToScreen(box.x, box.y, currentPanOffset).y})`,
                 })}
               />
             )}
@@ -648,11 +648,12 @@ export function SchematicEditor({
                 junctions,
               )
               if (!pinPos) return null
-              
+
               // Calculate offset to move pin slightly inside the box
               const insetAmount = 8 // pixels
-              let offsetX = 0, offsetY = 0
-              
+              let offsetX = 0,
+                offsetY = 0
+
               if (box.type === "chip") {
                 // For chips, move pins inward based on their side
                 if (pin.side === "left") offsetX = insetAmount
@@ -661,17 +662,17 @@ export function SchematicEditor({
                 else if (pin.side === "bottom") offsetY = -insetAmount
               }
               // For passives and net-labels, keep pins at their original position
-              
+
               const pinScreen = worldToScreen(
                 pinPos.x,
                 pinPos.y,
                 currentPanOffset,
               )
-              
+
               // Apply the inset offset
               const displayPinX = pinScreen.x + offsetX
               const displayPinY = pinScreen.y + offsetY
-              
+
               const pinFillColor =
                 connectionStart?.type === "pin" &&
                 connectionStart.pinId === pin.id
@@ -714,40 +715,50 @@ export function SchematicEditor({
                     {(() => {
                       if (box.type === "passive") {
                         // For passives: pin1 is bottom/left, pin2 is top/right
-                        return pin.side === "bottom" || pin.side === "left" ? 1 : 2
+                        return pin.side === "bottom" || pin.side === "left"
+                          ? 1
+                          : 2
                       } else if (box.type === "chip") {
                         // Calculate CCW pin number starting from top-left
-                        const leftPins = box.pins.filter(p => p.side === "left").sort((a, b) => a.index - b.index)
-                        const rightPins = box.pins.filter(p => p.side === "right").sort((a, b) => b.index - a.index) // bottom to top
-                        const topPins = box.pins.filter(p => p.side === "top").sort((a, b) => a.index - b.index)
-                        const bottomPins = box.pins.filter(p => p.side === "bottom").sort((a, b) => b.index - a.index) // right to left
-                        
+                        const leftPins = box.pins
+                          .filter((p) => p.side === "left")
+                          .sort((a, b) => a.index - b.index)
+                        const rightPins = box.pins
+                          .filter((p) => p.side === "right")
+                          .sort((a, b) => b.index - a.index) // bottom to top
+                        const topPins = box.pins
+                          .filter((p) => p.side === "top")
+                          .sort((a, b) => a.index - b.index)
+                        const bottomPins = box.pins
+                          .filter((p) => p.side === "bottom")
+                          .sort((a, b) => b.index - a.index) // right to left
+
                         let pinNumber = 1
-                        
+
                         // Left side (top to bottom)
                         for (const leftPin of leftPins) {
                           if (leftPin.id === pin.id) return pinNumber
                           pinNumber++
                         }
-                        
-                        // Bottom side (left to right) 
+
+                        // Bottom side (left to right)
                         for (const bottomPin of bottomPins) {
                           if (bottomPin.id === pin.id) return pinNumber
                           pinNumber++
                         }
-                        
+
                         // Right side (bottom to top)
                         for (const rightPin of rightPins) {
                           if (rightPin.id === pin.id) return pinNumber
                           pinNumber++
                         }
-                        
+
                         // Top side (right to left)
                         for (const topPin of topPins) {
                           if (topPin.id === pin.id) return pinNumber
                           pinNumber++
                         }
-                        
+
                         return pin.index + 1 // fallback
                       }
                       return 1 // default for net-labels

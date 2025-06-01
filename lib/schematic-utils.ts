@@ -55,10 +55,34 @@ export const getEndpointPosition = (
         // and chip height is dynamically calculated based on pins.
         if (pin.side === "left") {
           pinX = box.x
-          pinYValue = box.y + GRID_SIZE + pin.index * GRID_SIZE
+          // Calculate cumulative margin for this pin
+          const pinsOnSameSide = box.pins
+            .filter((p) => p.side === pin.side)
+            .sort((a, b) => a.index - b.index)
+          let cumulativeOffset = GRID_SIZE
+          for (let i = 0; i <= pin.index; i++) {
+            if (i > 0) {
+              const currentPin = pinsOnSameSide[i]
+              const margin = currentPin?.marginFromLastPin ?? GRID_SIZE
+              cumulativeOffset += margin
+            }
+          }
+          pinYValue = box.y + cumulativeOffset
         } else if (pin.side === "right") {
           pinX = box.x + chipWidth
-          pinYValue = box.y + GRID_SIZE + pin.index * GRID_SIZE
+          // Calculate cumulative margin for this pin
+          const pinsOnSameSide = box.pins
+            .filter((p) => p.side === pin.side)
+            .sort((a, b) => a.index - b.index)
+          let cumulativeOffset = GRID_SIZE
+          for (let i = 0; i <= pin.index; i++) {
+            if (i > 0) {
+              const currentPin = pinsOnSameSide[i]
+              const margin = currentPin?.marginFromLastPin ?? GRID_SIZE
+              cumulativeOffset += margin
+            }
+          }
+          pinYValue = box.y + cumulativeOffset
         }
         // Top/Bottom pins would need similar logic if added
         return { x: snapToGrid(pinX), y: snapToGrid(pinYValue) }

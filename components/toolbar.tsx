@@ -17,6 +17,7 @@ import {
   PlusSquare,
   CloudUpload,
   HelpCircle,
+  Settings,
 } from "lucide-react"
 import {
   Tooltip,
@@ -38,6 +39,7 @@ interface ToolbarProps {
   onEditConnLabel: () => void
   onDownload: () => void
   onShowLoadDialog: () => void
+  onShowPinMarginDialog: () => void
 }
 
 export function Toolbar({
@@ -53,6 +55,7 @@ export function Toolbar({
   onEditConnLabel,
   onDownload,
   onShowLoadDialog,
+  onShowPinMarginDialog,
 }: ToolbarProps) {
   const selectedBox = boxes.find((b) => b.id === selectedBoxId)
   const canDelete = selectedBoxId || selectedConnectionId || selectedJunctionId
@@ -186,6 +189,14 @@ export function Toolbar({
               title="Add Right Pin"
             >
               <PlusSquare className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onShowPinMarginDialog}
+              title="Configure Pin Margins"
+            >
+              <Settings className="w-4 h-4" />
             </Button>
           </>
         )}
