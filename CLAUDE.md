@@ -18,7 +18,7 @@ The project uses Biome for formatting
 
 ### Core State Management
 
-- **useSchematicState** (`hooks/useSchematicState.ts`): Central state hook managing all schematic entities (boxes, connections, junctions) and editing operations
+- **useSchematicStore** (`hooks/useSchematicStore/useSchematicStore.ts`): Central state store managing all schematic entities (boxes, connections, junctions) and editing operations
 - State includes selections, connection-in-progress tracking, and temporary editing values
 
 ### Main Components
@@ -54,7 +54,7 @@ Tools: "select", "add-chip", "add-passive", "add-net-label", "connect", "add-jun
 
 - **CircuitLayoutJson**: New standard format for tscircuit
 - **SchematicLayout**: Legacy format for backward compatibility
-- Export conversion handled in `useSchematicState.ts`
+- Export conversion handled in `useSchematicStore.ts`
 
 ## Styling & UI
 

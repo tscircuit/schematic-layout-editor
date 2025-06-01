@@ -5,7 +5,11 @@ import { initialState } from "./initialState"
 // Action implementations will be imported here
 import { createClearSelections } from "./actions/clearSelections"
 import { createAddChip } from "./actions/addChip"
-// ... import other action creators
+import { createAddPassive } from "./actions/addPassive"
+import { createAddNetLabel } from "./actions/addNetLabel"
+import { createStartConnection } from "./actions/startConnection"
+import { createFinishConnection } from "./actions/finishConnection"
+import { createAddWaypoint } from "./actions/addWaypoint"
 
 // Effect helper implementations
 import { createUpdateConnectionPaths } from "./effects/updateConnectionPaths"
@@ -60,13 +64,38 @@ export const useSchematicStore = create<SchematicStore>((set, get) => {
       _updateConnectionPaths,
       _updateDisplayedCoords,
     ),
-    // ... other actions will be structured similarly
+    addPassive: createAddPassive(
+      set,
+      get,
+      _updateConnectionPaths,
+      _updateDisplayedCoords,
+    ),
+    addNetLabel: createAddNetLabel(
+      set,
+      get,
+      _updateConnectionPaths,
+      _updateDisplayedCoords,
+    ),
+    startConnection: createStartConnection(
+      set,
+      get,
+      _updateConnectionPaths,
+      _updateDisplayedCoords,
+    ),
+    finishConnection: createFinishConnection(
+      set,
+      get,
+      _updateConnectionPaths,
+      _updateDisplayedCoords,
+    ),
+    addWaypoint: createAddWaypoint(
+      set,
+      get,
+      _updateConnectionPaths,
+      _updateDisplayedCoords,
+    ),
 
     // Placeholder for other actions that need to be implemented in separate files
-    addPassive: (worldPos) =>
-      console.warn("addPassive not implemented", worldPos),
-    addNetLabel: (worldPos) =>
-      console.warn("addNetLabel not implemented", worldPos),
     addJunction: (worldPos) =>
       console.warn("addJunction not implemented", worldPos),
     addJunctionToSegment: (worldPos, connId, segmentStart, segmentEnd) =>
@@ -77,15 +106,8 @@ export const useSchematicStore = create<SchematicStore>((set, get) => {
         segmentStart,
         segmentEnd,
       ),
-    startConnection: (endpoint) =>
-      console.warn("startConnection not implemented", endpoint),
-    addWaypoint: (worldPos) =>
-      console.warn("addWaypoint not implemented", worldPos),
-    finishConnection: (endpoint) =>
-      console.warn("finishConnection not implemented", endpoint),
     cancelConnection: () => {
       set({ connectionStart: null, currentConnectionWaypoints: [] })
-      console.warn("cancelConnection called")
     },
     deleteSelected: () => console.warn("deleteSelected not implemented"),
     rotateSelectedBox: () => console.warn("rotateSelectedBox not implemented"),

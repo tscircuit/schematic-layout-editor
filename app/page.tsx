@@ -4,7 +4,7 @@ import { Toolbar } from "@/components/toolbar"
 import { SchematicEditor } from "@/components/schematic-editor"
 import { CoordinateDisplay } from "@/components/coordinate-display"
 import { LoadDialog } from "@/components/load-dialog"
-import { useSchematicState } from "@/hooks/useSchematicState"
+import { useSchematicStore } from "@/hooks/useSchematicStore"
 import type { Tool } from "@/types/schematic"
 
 export default function GridDrawingAppPage() {
@@ -39,15 +39,15 @@ export default function GridDrawingAppPage() {
     deleteSelected,
     rotateSelectedBox,
     addPinToSelectedBox,
-    startEditingBoxNameHandler,
-    finishEditingBoxNameHandler,
-    startEditingConnLabelHandler,
-    finishEditingConnLabelHandler,
+    startEditingBoxName,
+    finishEditingBoxName,
+    startEditingConnLabel,
+    finishEditingConnLabel,
     updateBoxPosition,
     clearSelections,
     handleDownload,
     handleLoadData,
-  } = useSchematicState()
+  } = useSchematicStore()
 
   const [selectedTool, setSelectedTool] = useState<Tool>("select")
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
@@ -144,8 +144,7 @@ export default function GridDrawingAppPage() {
         onRotate={rotateSelectedBox}
         onAddPin={addPinToSelectedBox}
         onEditConnLabel={() =>
-          selectedConnectionId &&
-          startEditingConnLabelHandler(selectedConnectionId)
+          selectedConnectionId && startEditingConnLabel(selectedConnectionId)
         }
         onDownload={handleDownload}
         onShowLoadDialog={() => setShowLoadDialog(true)}
@@ -168,13 +167,13 @@ export default function GridDrawingAppPage() {
         editingName={editingNameBoxId}
         tempName={tempName}
         onTempNameChange={setTempName}
-        onStartEditingBoxName={startEditingBoxNameHandler}
-        onFinishEditingBoxName={finishEditingBoxNameHandler}
+        onStartEditingBoxName={startEditingBoxName}
+        onFinishEditingBoxName={finishEditingBoxName}
         editingConnLabelId={editingConnLabelId}
         tempConnLabel={tempConnLabel}
         onTempConnLabelChange={setTempConnLabel}
-        onStartEditingConnLabel={startEditingConnLabelHandler}
-        onFinishEditingConnLabel={finishEditingConnLabelHandler}
+        onStartEditingConnLabel={startEditingConnLabel}
+        onFinishEditingConnLabel={finishEditingConnLabel}
         onAddChip={addChip}
         onAddPassive={addPassive}
         onAddNetLabel={addNetLabel}
