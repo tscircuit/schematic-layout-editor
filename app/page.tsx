@@ -53,6 +53,20 @@ export default function GridDrawingAppPage() {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const [showLoadDialog, setShowLoadDialog] = useState(false)
 
+  // Initialize pan offset to center (0,0) on screen
+  useEffect(() => {
+    const initializePanOffset = () => {
+      const screenWidth = window.innerWidth
+      const screenHeight = window.innerHeight
+      // Center (0,0) by setting pan offset to half screen dimensions
+      setPanOffset({ x: screenWidth / 2, y: screenHeight / 2 })
+    }
+
+    initializePanOffset()
+    window.addEventListener('resize', initializePanOffset)
+    return () => window.removeEventListener('resize', initializePanOffset)
+  }, [])
+
   // Effect to clear connection state if tool changes away from "connect"
   useEffect(() => {
     if (selectedTool !== "connect" && connectionStart) {

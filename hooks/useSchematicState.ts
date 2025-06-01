@@ -1043,7 +1043,6 @@ export function useSchematicState() {
       },
     )
     setConnections(loadedConnectionsState)
-    alert("Circuit layout loaded successfully.")
   }, [])
 
   const handleLoadLegacyFormat = useCallback((loadedData: SchematicLayout) => {
