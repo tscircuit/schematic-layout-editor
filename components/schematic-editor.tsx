@@ -346,7 +346,7 @@ export function SchematicEditor({
       let finalX = rawNewX,
         finalY = rawNewY
       if (box.type === "passive") {
-        if (box.rotation === 0 || box.rotation === 180) {
+        if (box.rotation === 0) {
           finalX = snapToGrid(rawNewX)
           finalY = snapToHalfGrid(rawNewY)
         } else {

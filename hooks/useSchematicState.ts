@@ -319,24 +319,29 @@ export function useSchematicState() {
           box.id === selectedBoxId &&
           (box.type === "passive" || box.type === "net-label")
         ) {
-          const newRotation = ((box.rotation + 90) % 360) as 0 | 90 | 180 | 270
+          let newRotation: 0 | 90 | 180 | 270
           if (box.type === "passive") {
+            // For passives, only allow 0 and 90 degree rotations
+            newRotation = box.rotation === 0 ? 90 : 0
             let newX = box.x
             let newY = box.y
-            const isOldRotationVertical =
-              box.rotation === 0 || box.rotation === 180
-            const isNewRotationVertical =
-              newRotation === 0 || newRotation === 180
+            const isOldRotationVertical = box.rotation === 0
+            const isNewRotationVertical = newRotation === 0
             if (isOldRotationVertical && !isNewRotationVertical) {
+              // Going from vertical (0°) to horizontal (90°)
               newX = snapToHalfGrid(box.x)
               newY = snapToGrid(box.y)
             } else if (!isOldRotationVertical && isNewRotationVertical) {
+              // Going from horizontal (90°) to vertical (0°)
               newX = snapToGrid(box.x)
               newY = snapToHalfGrid(box.y)
             }
             return { ...box, rotation: newRotation, x: newX, y: newY }
+          } else {
+            // For net-labels, keep the full rotation cycle
+            newRotation = ((box.rotation + 90) % 360) as 0 | 90 | 180 | 270
+            return { ...box, rotation: newRotation }
           }
-          return { ...box, rotation: newRotation }
         }
         return box
       }),
@@ -822,11 +827,11 @@ export function useSchematicState() {
       loadedBoxesState.push({
         id: newId,
         x:
-          type === "passive" && (rotation === 90 || rotation === 270)
+          type === "passive" && rotation === 90
             ? snapToHalfGrid(appX)
             : snapToGrid(appX),
         y:
-          type === "passive" && (rotation === 0 || rotation === 180)
+          type === "passive" && rotation === 0
             ? snapToHalfGrid(appY)
             : snapToGrid(appY),
         width,
@@ -1106,11 +1111,11 @@ export function useSchematicState() {
       loadedBoxesState.push({
         id: newId,
         x:
-          type === "passive" && (rotation === 90 || rotation === 270)
+          type === "passive" && rotation === 90
             ? snapToHalfGrid(appX)
             : snapToGrid(appX),
         y:
-          type === "passive" && (rotation === 0 || rotation === 180)
+          type === "passive" && rotation === 0
             ? snapToHalfGrid(appY)
             : snapToGrid(appY),
         width,

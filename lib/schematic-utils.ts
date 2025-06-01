@@ -79,12 +79,12 @@ export const getVisualDetails = (
     const mainAxisLength = box.height // PASSIVE_PIN_TO_PIN_DIST
     const crossAxisWidth = box.width // PASSIVE_BODY_WIDTH
     let vWidth, vHeight
-    if (box.rotation === 0 || box.rotation === 180) {
+    if (box.rotation === 0) {
       // Vertical orientation
       vWidth = crossAxisWidth
       vHeight = mainAxisLength
     } else {
-      // Horizontal orientation
+      // Horizontal orientation (90°)
       vWidth = mainAxisLength
       vHeight = crossAxisWidth
     }
