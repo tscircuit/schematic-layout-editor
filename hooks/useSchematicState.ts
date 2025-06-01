@@ -486,7 +486,7 @@ export function useSchematicState() {
     } else if (selectedJunctionId) {
       const junc = junctions.find((j) => j.id === selectedJunctionId)
       if (junc) {
-        coordsText = `Junction: X: ${junc.x.toFixed(2)}, Y: ${(-junc.y).toFixed(2)}`
+        coordsText = `Junction ${junc.id}: X: ${junc.x.toFixed(2)}, Y: ${(-junc.y).toFixed(2)}`
       }
     }
     setDisplayedCoords(coordsText)
