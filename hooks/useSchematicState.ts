@@ -570,9 +570,14 @@ export function useSchematicState() {
   ): Pin[] => {
     const result: Pin[] = []
 
+    // Find unique X positions to determine left/right sides
+    const uniqueX = [...new Set(pins.map(p => p.x))].sort((a, b) => a - b)
+    const leftX = uniqueX[0]
+    const rightX = uniqueX[uniqueX.length - 1]
+
     // Create pins for left side
     const leftPins = pins
-      .filter((p) => p.x === box.centerX - (GRID_SIZE * 4) / 2)
+      .filter((p) => Math.abs(p.x - leftX) < 0.001) // Use small tolerance for floating point comparison
       .sort((a, b) => a.y - b.y)
     for (let i = 0; i < leftPins.length; i++) {
       const pin = leftPins[i]
@@ -582,30 +587,32 @@ export function useSchematicState() {
         marginFromLastPin = Math.abs(pin.y - prevPin.y)
       }
       result.push({
-        id: `pin-loaded-L${i}`,
+        id: `pin-${box.boxId}-L${i}`,
         side: "left",
         index: i,
         marginFromLastPin,
       })
     }
 
-    // Create pins for right side
-    const rightPins = pins
-      .filter((p) => p.x === box.centerX + (GRID_SIZE * 4) / 2)
-      .sort((a, b) => a.y - b.y)
-    for (let i = 0; i < rightPins.length; i++) {
-      const pin = rightPins[i]
-      let marginFromLastPin: number | undefined
-      if (i > 0) {
-        const prevPin = rightPins[i - 1]
-        marginFromLastPin = Math.abs(pin.y - prevPin.y)
+    // Create pins for right side (only if there are multiple X positions)
+    if (uniqueX.length > 1) {
+      const rightPins = pins
+        .filter((p) => Math.abs(p.x - rightX) < 0.001) // Use small tolerance for floating point comparison
+        .sort((a, b) => a.y - b.y)
+      for (let i = 0; i < rightPins.length; i++) {
+        const pin = rightPins[i]
+        let marginFromLastPin: number | undefined
+        if (i > 0) {
+          const prevPin = rightPins[i - 1]
+          marginFromLastPin = Math.abs(pin.y - prevPin.y)
+        }
+        result.push({
+          id: `pin-${box.boxId}-R${i}`,
+          side: "right",
+          index: i,
+          marginFromLastPin,
+        })
       }
-      result.push({
-        id: `pin-loaded-R${i}`,
-        side: "right",
-        index: i,
-        marginFromLastPin,
-      })
     }
 
     return result
@@ -871,9 +878,7 @@ export function useSchematicState() {
         } else {
           type = "chip"
           isPassiveFromFile = false
-          const maxPinsHorizontal = Math.max(b.leftPinCount, b.rightPinCount)
-          const calculatedChipHeight = maxPinsHorizontal * GRID_SIZE + GRID_SIZE
-          height = Math.max(GRID_SIZE * 2, calculatedChipHeight)
+          // Height will be calculated after pins are computed
         }
 
         let appX = b.centerX
@@ -892,6 +897,8 @@ export function useSchematicState() {
           // Use the helper function to compute margins from actual pin positions
           const computedPins = computePinMarginsFromPositions(b.pins, b)
           pins.push(...computedPins)
+          // Calculate height based on computed pins
+          height = calculateChipHeight(computedPins)
         }
 
         // Extract number from boxId for counter tracking
