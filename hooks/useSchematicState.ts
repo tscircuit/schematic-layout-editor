@@ -95,7 +95,7 @@ export function useSchematicState() {
         })
       }
 
-      const initialWidth = GRID_SIZE * 4
+      const initialWidth = 2
       const initialHeight = calculateChipHeight(initialPins)
 
       // Calculate top-left position from center, then snap to grid (same as dragging)
@@ -848,7 +848,7 @@ export function useSchematicState() {
         const newId = `loaded-box-${uuidv4()}-${index}`
         let type: "chip" | "passive" = "chip"
         let isPassiveFromFile = false
-        let width = GRID_SIZE * 4
+        let width = 2
         let height = GRID_SIZE * 2
         let rotation: 0 | 90 | 180 | 270 = 0
 
@@ -881,13 +881,6 @@ export function useSchematicState() {
           // Height will be calculated after pins are computed
         }
 
-        let appX = b.centerX
-        let appY = -b.centerY
-        if (type === "chip") {
-          appX = b.centerX - width / 2
-          appY = -b.centerY - height / 2
-        }
-
         // Create pins based on pin counts and positions
         const pins: Box["pins"] = []
         if (type === "passive") {
@@ -899,6 +892,14 @@ export function useSchematicState() {
           pins.push(...computedPins)
           // Calculate height based on computed pins
           height = calculateChipHeight(computedPins)
+        }
+
+        // Calculate position after height is finalized
+        let appX = b.centerX
+        let appY = -b.centerY
+        if (type === "chip") {
+          appX = b.centerX - width / 2
+          appY = -b.centerY - height / 2
         }
 
         // Extract number from boxId for counter tracking
@@ -1189,7 +1190,7 @@ export function useSchematicState() {
       const newId = b.boxId || `loaded-box-${uuidv4()}-${index}`
       let type: "chip" | "passive" = "chip"
       let isPassiveFromFile = false
-      let width = GRID_SIZE * 4
+      let width = 2
       let height = GRID_SIZE * 2
       let rotation: 0 | 90 | 180 | 270 = 0
 
