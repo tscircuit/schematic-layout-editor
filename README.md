@@ -2,7 +2,9 @@
 
 This schematic editor is used to create reference layouts for the tscircuit schematic layout "match-adapt" algorithm. This algorithm works by matching a user's netlist against a known corpus of schematic designs.
 
-![image](https://github.com/user-attachments/assets/9f26273d-95dc-4677-94d2-e04be50d726d)
+[![image](https://github.com/user-attachments/assets/9f26273d-95dc-4677-94d2-e04be50d726d)](https://schematic-layout-editor.tscircuit.com)
+
+[Try it out!](https://schematic-layout-editor.tscircuit.com)
 
 You can download your schematic layout as JSON from this page and hit the "cloud upload" icon to upload it to the project's corpus. After approval on GitHub, tscircuit will automatically incorporate your design into automatic schematic layout.
 
