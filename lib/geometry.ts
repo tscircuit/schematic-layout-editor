@@ -1,16 +1,25 @@
 import type React from "react"
 import { GRID_SIZE, SCALE } from "@/types/schematic"
 
-export const snapToGrid = (value: number): number => Math.round(value / GRID_SIZE) * GRID_SIZE
+export const snapToGrid = (value: number): number =>
+  Math.round(value / GRID_SIZE) * GRID_SIZE
 export const snapToHalfGrid = (value: number): number =>
   Math.round((value - GRID_SIZE / 2) / GRID_SIZE) * GRID_SIZE + GRID_SIZE / 2
 
-export const worldToScreen = (x: number, y: number, panOffset: { x: number; y: number }): { x: number; y: number } => ({
+export const worldToScreen = (
+  x: number,
+  y: number,
+  panOffset: { x: number; y: number },
+): { x: number; y: number } => ({
   x: x * SCALE + panOffset.x,
   y: y * SCALE + panOffset.y,
 })
 
-export const screenToWorld = (x: number, y: number, panOffset: { x: number; y: number }): { x: number; y: number } => ({
+export const screenToWorld = (
+  x: number,
+  y: number,
+  panOffset: { x: number; y: number },
+): { x: number; y: number } => ({
   x: (x - panOffset.x) / SCALE,
   y: (y - panOffset.y) / SCALE,
 })
@@ -24,7 +33,10 @@ export const getMousePosition = (
   return { x: e.clientX - rect.left, y: e.clientY - rect.top }
 }
 
-export const distSq = (p1: { x: number; y: number }, p2: { x: number; y: number }): number => {
+export const distSq = (
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+): number => {
   return (p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2
 }
 
@@ -48,7 +60,9 @@ export enum Direction {
   Vertical = 2,
 }
 
-export const generateDrawableOrthogonalPath = (waypoints: { x: number; y: number }[]): { x: number; y: number }[] => {
+export const generateDrawableOrthogonalPath = (
+  waypoints: { x: number; y: number }[],
+): { x: number; y: number }[] => {
   if (waypoints.length < 2) return waypoints
 
   const drawablePoints: { x: number; y: number }[] = [waypoints[0]]

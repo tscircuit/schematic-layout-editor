@@ -35,8 +35,14 @@ export const getEndpointPosition = (
         const cosAngle = Math.cos(angleRad)
         const sinAngle = Math.sin(angleRad)
 
-        const rotatedPinX = (pinX - centerX) * cosAngle - (pinYValue - centerY) * sinAngle + centerX
-        const rotatedPinY = (pinX - centerX) * sinAngle + (pinYValue - centerY) * cosAngle + centerY
+        const rotatedPinX =
+          (pinX - centerX) * cosAngle -
+          (pinYValue - centerY) * sinAngle +
+          centerX
+        const rotatedPinY =
+          (pinX - centerX) * sinAngle +
+          (pinYValue - centerY) * cosAngle +
+          centerY
         return { x: rotatedPinX, y: rotatedPinY }
       } else if (box.type === "net-label") {
         return { x: box.x, y: box.y } // Pin is at the box's x, y (anchor point)
@@ -65,7 +71,9 @@ export const getEndpointPosition = (
   return null
 }
 
-export const getVisualDetails = (box: Box): { x: number; y: number; width: number; height: number } => {
+export const getVisualDetails = (
+  box: Box,
+): { x: number; y: number; width: number; height: number } => {
   if (box.type === "passive") {
     // The box.width is the cross-axis width, box.height is the main-axis (pin-to-pin) length
     const mainAxisLength = box.height // PASSIVE_PIN_TO_PIN_DIST
@@ -81,7 +89,12 @@ export const getVisualDetails = (box: Box): { x: number; y: number; width: numbe
       vHeight = crossAxisWidth
     }
     // x, y for passive is center
-    return { x: box.x - vWidth / 2, y: box.y - vHeight / 2, width: vWidth, height: vHeight }
+    return {
+      x: box.x - vWidth / 2,
+      y: box.y - vHeight / 2,
+      width: vWidth,
+      height: vHeight,
+    }
   } else if (box.type === "net-label") {
     // x, y for net-label is its anchor point, visual is centered around it for simplicity here
     // but actual rendering might offset based on anchorSide and text.
@@ -99,7 +112,10 @@ export const getVisualDetails = (box: Box): { x: number; y: number; width: numbe
   }
 }
 
-export const getEffectiveAnchorSide = (initialAnchor: AnchorSide, rotation: 0 | 90 | 180 | 270): AnchorSide => {
+export const getEffectiveAnchorSide = (
+  initialAnchor: AnchorSide,
+  rotation: 0 | 90 | 180 | 270,
+): AnchorSide => {
   const initialIndex = SIDES_ORDER.indexOf(initialAnchor)
   if (initialIndex === -1) return "left" // Default
   const rotationSteps = rotation / 90

@@ -3,7 +3,14 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 
 interface LoadDialogProps {
   isOpen: boolean
@@ -11,7 +18,11 @@ interface LoadDialogProps {
   onLoadData: (jsonData: string) => void
 }
 
-export function LoadDialog({ isOpen, onOpenChange, onLoadData }: LoadDialogProps) {
+export function LoadDialog({
+  isOpen,
+  onOpenChange,
+  onLoadData,
+}: LoadDialogProps) {
   const [loadDialogText, setLoadDialogText] = useState("")
 
   const handleLoad = () => {
@@ -36,7 +47,11 @@ export function LoadDialog({ isOpen, onOpenChange, onLoadData }: LoadDialogProps
         </div>
         <DialogFooter>
           <DialogClose asChild>
-            <Button type="button" variant="outline" onClick={() => setLoadDialogText("")}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setLoadDialogText("")}
+            >
               Cancel
             </Button>
           </DialogClose>

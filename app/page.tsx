@@ -115,7 +115,11 @@ export default function GridDrawingAppPage() {
         case "R":
           if (selectedBoxId) {
             const selectedBox = boxes.find((b) => b.id === selectedBoxId)
-            if (selectedBox && (selectedBox.type === "passive" || selectedBox.type === "net-label")) {
+            if (
+              selectedBox &&
+              (selectedBox.type === "passive" ||
+                selectedBox.type === "net-label")
+            ) {
               rotateSelectedBox()
             }
           }
@@ -139,7 +143,10 @@ export default function GridDrawingAppPage() {
         onDelete={deleteSelected}
         onRotate={rotateSelectedBox}
         onAddPin={addPinToSelectedBox}
-        onEditConnLabel={() => selectedConnectionId && startEditingConnLabelHandler(selectedConnectionId)}
+        onEditConnLabel={() =>
+          selectedConnectionId &&
+          startEditingConnLabelHandler(selectedConnectionId)
+        }
         onDownload={handleDownload}
         onShowLoadDialog={() => setShowLoadDialog(true)}
       />
@@ -177,11 +184,17 @@ export default function GridDrawingAppPage() {
         onAddWaypoint={addWaypoint}
         onFinishConnection={finishConnection}
         onUpdateBoxPosition={updateBoxPosition}
-        onClearSelectionsAndCancelConnection={clearSelectionsAndCancelConnection}
+        onClearSelectionsAndCancelConnection={
+          clearSelectionsAndCancelConnection
+        }
         onSelectTool={handleSelectTool}
       />
       <CoordinateDisplay coords={displayedCoords} />
-      <LoadDialog isOpen={showLoadDialog} onOpenChange={setShowLoadDialog} onLoadData={handleLoadData} />
+      <LoadDialog
+        isOpen={showLoadDialog}
+        onOpenChange={setShowLoadDialog}
+        onLoadData={handleLoadData}
+      />
     </div>
   )
 }

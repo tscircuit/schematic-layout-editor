@@ -119,7 +119,9 @@ export function SchematicEditor({
   onSelectTool,
 }: SchematicEditorProps) {
   const currentPanOffset =
-    panOffsetProp && typeof panOffsetProp.x === "number" && typeof panOffsetProp.y === "number"
+    panOffsetProp &&
+    typeof panOffsetProp.x === "number" &&
+    typeof panOffsetProp.y === "number"
       ? panOffsetProp
       : { x: 0, y: 0 }
 
@@ -128,7 +130,10 @@ export function SchematicEditor({
   const lastPanPosition = useRef({ x: 0, y: 0 })
   const [draggedBoxId, setDraggedBoxId] = useState<string | null>(null)
   const dragOffset = useRef({ x: 0, y: 0 })
-  const [currentMouseScreenPos, setCurrentMouseScreenPos] = useState({ x: 0, y: 0 })
+  const [currentMouseScreenPos, setCurrentMouseScreenPos] = useState({
+    x: 0,
+    y: 0,
+  })
 
   // Initialize lastPanPosition if SVG is available
   useEffect(() => {
@@ -139,7 +144,11 @@ export function SchematicEditor({
     }
   }, [])
 
-  const handlePinClick = (e: React.MouseEvent, boxId: string, pinId: string) => {
+  const handlePinClick = (
+    e: React.MouseEvent,
+    boxId: string,
+    pinId: string,
+  ) => {
     e.stopPropagation()
     if (editingName || editingConnLabelId) return
     const endpoint: ConnectionEndpointSource = { type: "pin", boxId, pinId }
@@ -154,7 +163,11 @@ export function SchematicEditor({
       if (!connectionStart) {
         onStartConnection(endpoint)
       } else {
-        if (connectionStart.type === "pin" && connectionStart.boxId === boxId && connectionStart.pinId === pinId) {
+        if (
+          connectionStart.type === "pin" &&
+          connectionStart.boxId === boxId &&
+          connectionStart.pinId === pinId
+        ) {
           return
         }
         onFinishConnection(endpoint)
@@ -227,11 +240,18 @@ export function SchematicEditor({
 
     // Check if we clicked on a connection
     for (const conn of connections) {
-      const screenPathPoints = conn.path.map((p) => worldToScreen(p.x, p.y, currentPanOffset))
-      const drawableScreenPath = generateDrawableOrthogonalPath(screenPathPoints)
+      const screenPathPoints = conn.path.map((p) =>
+        worldToScreen(p.x, p.y, currentPanOffset),
+      )
+      const drawableScreenPath =
+        generateDrawableOrthogonalPath(screenPathPoints)
       for (let i = 0; i < drawableScreenPath.length - 1; i++) {
         if (
-          distToSegmentSquared(mousePos, drawableScreenPath[i], drawableScreenPath[i + 1]) <
+          distToSegmentSquared(
+            mousePos,
+            drawableScreenPath[i],
+            drawableScreenPath[i + 1],
+          ) <
           CONNECTION_SELECTION_THRESHOLD_PX ** 2
         ) {
           clickedOnSomething = true
@@ -292,7 +312,12 @@ export function SchematicEditor({
         }
       }
       if (segmentDetails) {
-        onAddJunctionToSegment(worldPos, segmentDetails.connId, segmentDetails.p1, segmentDetails.p2)
+        onAddJunctionToSegment(
+          worldPos,
+          segmentDetails.connId,
+          segmentDetails.p1,
+          segmentDetails.p2,
+        )
       } else {
         onAddJunction(worldPos)
       }
@@ -345,11 +370,22 @@ export function SchematicEditor({
   }
 
   const drawablePreviewPath = (() => {
-    if (!connectionStart || !currentConnectionWaypoints || currentConnectionWaypoints.length === 0) {
+    if (
+      !connectionStart ||
+      !currentConnectionWaypoints ||
+      currentConnectionWaypoints.length === 0
+    ) {
       return []
     }
-    const mouseWorldNow = screenToWorld(currentMouseScreenPos.x, currentMouseScreenPos.y, currentPanOffset)
-    const waypointsWithPreviewInWorld = [...currentConnectionWaypoints, mouseWorldNow]
+    const mouseWorldNow = screenToWorld(
+      currentMouseScreenPos.x,
+      currentMouseScreenPos.y,
+      currentPanOffset,
+    )
+    const waypointsWithPreviewInWorld = [
+      ...currentConnectionWaypoints,
+      mouseWorldNow,
+    ]
     const screenPathPoints = waypointsWithPreviewInWorld.map((p) =>
       p ? worldToScreen(p.x, p.y, currentPanOffset) : { x: 0, y: 0 },
     )
@@ -380,13 +416,18 @@ export function SchematicEditor({
       <rect width="100%" height="100%" fill="url(#grid)" />
 
       {connections.map((conn) => {
-        const screenPath = conn.path.map((p) => worldToScreen(p.x, p.y, currentPanOffset))
+        const screenPath = conn.path.map((p) =>
+          worldToScreen(p.x, p.y, currentPanOffset),
+        )
         const drawableScreenPath = generateDrawableOrthogonalPath(screenPath)
         const isSelected = conn.id === selectedConnectionId
         let labelScreenPos = { x: 0, y: 0 }
         if (drawableScreenPath.length >= 1) {
           const firstSegmentStart = drawableScreenPath[0]
-          const firstSegmentEnd = drawableScreenPath.length > 1 ? drawableScreenPath[1] : drawableScreenPath[0]
+          const firstSegmentEnd =
+            drawableScreenPath.length > 1
+              ? drawableScreenPath[1]
+              : drawableScreenPath[0]
           labelScreenPos = {
             x: (firstSegmentStart.x + firstSegmentEnd.x) / 2,
             y: (firstSegmentStart.y + firstSegmentEnd.y) / 2 - 8,
@@ -397,7 +438,13 @@ export function SchematicEditor({
             <polyline
               points={drawableScreenPath.map((p) => `${p.x},${p.y}`).join(" ")}
               fill="none"
-              stroke={isSelected ? "#ef4444" : editingConnLabelId === conn.id ? "#f97316" : "#3b82f6"}
+              stroke={
+                isSelected
+                  ? "#ef4444"
+                  : editingConnLabelId === conn.id
+                    ? "#f97316"
+                    : "#3b82f6"
+              }
               strokeWidth={isSelected || editingConnLabelId === conn.id ? 3 : 2}
               className="cursor-pointer"
               onDoubleClick={(e) => {
@@ -419,7 +466,12 @@ export function SchematicEditor({
               </text>
             )}
             {editingConnLabelId === conn.id && (
-              <foreignObject x={labelScreenPos.x - 40} y={labelScreenPos.y - 10} width="80" height="22">
+              <foreignObject
+                x={labelScreenPos.x - 40}
+                y={labelScreenPos.y - 10}
+                width="80"
+                height="22"
+              >
                 <Input
                   type="text"
                   value={tempConnLabel}
@@ -451,7 +503,11 @@ export function SchematicEditor({
 
       {boxes.map((box) => {
         const visual = getVisualDetails(box)
-        const screenVisualPos = worldToScreen(visual.x, visual.y, currentPanOffset)
+        const screenVisualPos = worldToScreen(
+          visual.x,
+          visual.y,
+          currentPanOffset,
+        )
         const isSelected = box.id === selectedBoxId
         let netLabelTextRenderDetails = {
           textX: 0,
@@ -459,14 +515,30 @@ export function SchematicEditor({
           textAnchor: "start" as "start" | "middle" | "end",
           dominantBaseline: "middle" as "middle" | "hanging" | "alphabetic",
         }
-        let netLabelFOAttributes = { foX: 0, foY: 0, inputWidth: 60, inputHeight: 22 }
+        let netLabelFOAttributes = {
+          foX: 0,
+          foY: 0,
+          inputWidth: 60,
+          inputHeight: 22,
+        }
 
         if (box.type === "net-label") {
           const pinScreenPos = worldToScreen(box.x, box.y, currentPanOffset)
-          const effectiveAnchor = getEffectiveAnchorSide(box.anchorSide || "left", box.rotation)
-          netLabelTextRenderDetails = getNetLabelTextAttributes(effectiveAnchor, pinScreenPos.x, pinScreenPos.y)
+          const effectiveAnchor = getEffectiveAnchorSide(
+            box.anchorSide || "left",
+            box.rotation,
+          )
+          netLabelTextRenderDetails = getNetLabelTextAttributes(
+            effectiveAnchor,
+            pinScreenPos.x,
+            pinScreenPos.y,
+          )
           if (editingName === box.id) {
-            netLabelFOAttributes = getNetLabelForeignObjectPos(effectiveAnchor, pinScreenPos.x, pinScreenPos.y)
+            netLabelFOAttributes = getNetLabelForeignObjectPos(
+              effectiveAnchor,
+              pinScreenPos.x,
+              pinScreenPos.y,
+            )
           }
         }
 
@@ -479,7 +551,13 @@ export function SchematicEditor({
                 width={visual.width * SCALE}
                 height={visual.height * SCALE}
                 fill="white"
-                stroke={isSelected ? "#3b82f6" : editingName === box.id ? "#f97316" : "#6b7280"}
+                stroke={
+                  isSelected
+                    ? "#3b82f6"
+                    : editingName === box.id
+                      ? "#f97316"
+                      : "#6b7280"
+                }
                 strokeWidth={isSelected || editingName === box.id ? 2 : 1}
                 className="cursor-move"
                 transform={`rotate(${box.rotation}, ${worldToScreen(box.x, box.y, currentPanOffset).x}, ${worldToScreen(box.x, box.y, currentPanOffset).y})`}
@@ -497,8 +575,16 @@ export function SchematicEditor({
                     ? netLabelFOAttributes.foY
                     : screenVisualPos.y + (visual.height * SCALE) / 2 - 11
                 }
-                width={box.type === "net-label" ? netLabelFOAttributes.inputWidth : 60}
-                height={box.type === "net-label" ? netLabelFOAttributes.inputHeight : 22}
+                width={
+                  box.type === "net-label"
+                    ? netLabelFOAttributes.inputWidth
+                    : 60
+                }
+                height={
+                  box.type === "net-label"
+                    ? netLabelFOAttributes.inputHeight
+                    : 22
+                }
               >
                 <Input
                   type="text"
@@ -525,10 +611,24 @@ export function SchematicEditor({
                     ? netLabelTextRenderDetails.textY
                     : screenVisualPos.y + (visual.height * SCALE) / 2
                 }
-                textAnchor={box.type === "net-label" ? netLabelTextRenderDetails.textAnchor : "middle"}
-                dominantBaseline={box.type === "net-label" ? netLabelTextRenderDetails.dominantBaseline : "middle"}
+                textAnchor={
+                  box.type === "net-label"
+                    ? netLabelTextRenderDetails.textAnchor
+                    : "middle"
+                }
+                dominantBaseline={
+                  box.type === "net-label"
+                    ? netLabelTextRenderDetails.dominantBaseline
+                    : "middle"
+                }
                 fontSize={12}
-                fill={box.type === "net-label" ? (isSelected ? "#3b82f6" : "#166534") : "#374151"}
+                fill={
+                  box.type === "net-label"
+                    ? isSelected
+                      ? "#3b82f6"
+                      : "#166534"
+                    : "#374151"
+                }
                 className="cursor-text select-none"
                 fontWeight={box.type === "net-label" ? "bold" : "normal"}
                 onDoubleClick={(e) => {
@@ -540,11 +640,20 @@ export function SchematicEditor({
               </text>
             )}
             {box.pins.map((pin) => {
-              const pinPos = getEndpointPosition({ type: "pin", boxId: box.id, pinId: pin.id }, boxes, junctions)
+              const pinPos = getEndpointPosition(
+                { type: "pin", boxId: box.id, pinId: pin.id },
+                boxes,
+                junctions,
+              )
               if (!pinPos) return null
-              const pinScreen = worldToScreen(pinPos.x, pinPos.y, currentPanOffset)
+              const pinScreen = worldToScreen(
+                pinPos.x,
+                pinPos.y,
+                currentPanOffset,
+              )
               const pinFillColor =
-                connectionStart?.type === "pin" && connectionStart.pinId === pin.id
+                connectionStart?.type === "pin" &&
+                connectionStart.pinId === pin.id
                   ? "#3b82f6"
                   : isSelected && box.type === "net-label"
                     ? "#3b82f6"
@@ -590,7 +699,8 @@ export function SchematicEditor({
             fill={
               isSelected
                 ? "#ef4444"
-                : connectionStart?.type === "junction" && connectionStart.junctionId === junc.id
+                : connectionStart?.type === "junction" &&
+                    connectionStart.junctionId === junc.id
                   ? "#3b82f6"
                   : "#16a34a"
             }

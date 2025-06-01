@@ -49,7 +49,13 @@ export interface Connection {
   label?: string
 }
 
-export type Tool = "select" | "add-chip" | "add-passive" | "add-net-label" | "connect" | "add-junction"
+export type Tool =
+  | "select"
+  | "add-chip"
+  | "add-passive"
+  | "add-net-label"
+  | "connect"
+  | "add-junction"
 
 // --- New Standard Format ---
 export type LayoutPointRef =
