@@ -846,6 +846,8 @@ export function useSchematicState() {
       // Load boxes
       loadedData.boxes.forEach((b, index) => {
         const newId = `loaded-box-${uuidv4()}-${index}`
+        const totalPinCount =
+          b.leftPinCount + b.rightPinCount + b.topPinCount + b.bottomPinCount
         let type: "chip" | "passive" = "chip"
         let isPassiveFromFile = false
         let width = 2
@@ -853,7 +855,16 @@ export function useSchematicState() {
         let rotation: 0 | 90 | 180 | 270 = 0
 
         // Determine if it's a passive component
-        if (
+        if (totalPinCount === 2) {
+          type = "passive"
+          isPassiveFromFile = true
+          width = PASSIVE_BODY_WIDTH
+          height = PASSIVE_PIN_TO_PIN_DIST
+          const [p1, p2] = b.pins
+          const dx = Math.abs(p1.x - p2.x)
+          const dy = Math.abs(p1.y - p2.y)
+          rotation = dx > dy ? 90 : 0
+        } else if (
           b.topPinCount === 1 &&
           b.bottomPinCount === 1 &&
           b.leftPinCount === 0 &&
@@ -884,8 +895,13 @@ export function useSchematicState() {
         // Create pins based on pin counts and positions
         const pins: Box["pins"] = []
         if (type === "passive") {
-          pins.push({ id: `pin-${newId}-T0`, side: "top", index: 0 })
-          pins.push({ id: `pin-${newId}-B0`, side: "bottom", index: 0 })
+          if (rotation === 90) {
+            pins.push({ id: `pin-${newId}-L0`, side: "left", index: 0 })
+            pins.push({ id: `pin-${newId}-R0`, side: "right", index: 0 })
+          } else {
+            pins.push({ id: `pin-${newId}-T0`, side: "top", index: 0 })
+            pins.push({ id: `pin-${newId}-B0`, side: "bottom", index: 0 })
+          }
         } else if (type === "chip") {
           // Use the helper function to compute margins from actual pin positions
           const computedPins = computePinMarginsFromPositions(b.pins, b)
@@ -900,6 +916,10 @@ export function useSchematicState() {
         if (type === "chip") {
           appX = b.centerX - width / 2
           appY = -b.centerY - height / 2
+        } else if (type === "passive" && totalPinCount === 2) {
+          const [p1, p2] = b.pins
+          appX = (p1.x + p2.x) / 2
+          appY = -((p1.y + p2.y) / 2)
         }
 
         // Extract number from boxId for counter tracking
@@ -1218,6 +1238,8 @@ export function useSchematicState() {
 
     loadedData.boxes.forEach((b, index) => {
       const newId = b.boxId || `loaded-box-${uuidv4()}-${index}`
+      const totalPinCount =
+        b.leftPinCount + b.rightPinCount + b.topPinCount + b.bottomPinCount
       let type: "chip" | "passive" = "chip"
       let isPassiveFromFile = false
       let width = 2
@@ -1246,6 +1268,12 @@ export function useSchematicState() {
         width = PASSIVE_BODY_WIDTH
         height = PASSIVE_PIN_TO_PIN_DIST
         rotation = 90
+      } else if (totalPinCount === 2) {
+        type = "passive"
+        isPassiveFromFile = true
+        width = PASSIVE_BODY_WIDTH
+        height = PASSIVE_PIN_TO_PIN_DIST
+        rotation = b.leftPinCount + b.rightPinCount === 2 ? 90 : 0
       } else {
         type = "chip"
         isPassiveFromFile = false
@@ -1263,8 +1291,13 @@ export function useSchematicState() {
 
       const pins: Box["pins"] = []
       if (type === "passive") {
-        pins.push({ id: `pin-${newId}-T0`, side: "top", index: 0 })
-        pins.push({ id: `pin-${newId}-B0`, side: "bottom", index: 0 })
+        if (rotation === 90) {
+          pins.push({ id: `pin-${newId}-L0`, side: "left", index: 0 })
+          pins.push({ id: `pin-${newId}-R0`, side: "right", index: 0 })
+        } else {
+          pins.push({ id: `pin-${newId}-T0`, side: "top", index: 0 })
+          pins.push({ id: `pin-${newId}-B0`, side: "bottom", index: 0 })
+        }
       } else if (type === "chip") {
         for (let i = 0; i < b.leftPinCount; i++)
           pins.push({ id: `pin-${newId}-L${i}`, side: "left", index: i })
