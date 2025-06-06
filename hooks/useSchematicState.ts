@@ -784,11 +784,24 @@ export function useSchematicState() {
     }
 
     const jsonString = JSON.stringify(layout, null, 2)
+    const simpleHash = (str: string): string => {
+      let hash = 0
+      for (let i = 0; i < str.length; i++) {
+        hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+      }
+      return hash.toString(16).padStart(8, "0").slice(0, 8)
+    }
+    const hashHex = simpleHash(jsonString)
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, "0")
+    const day = String(now.getDate()).padStart(2, "0")
+    const fileName = `corpus${year}-${month}-${day}-${hashHex}.json`
     const blob = new Blob([jsonString], { type: "application/json" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = "circuit-layout.json"
+    a.download = fileName
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
