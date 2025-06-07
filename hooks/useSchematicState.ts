@@ -17,6 +17,8 @@ import {
   GRID_SIZE,
   PASSIVE_BODY_WIDTH,
   PASSIVE_PIN_TO_PIN_DIST,
+  SINGLE_SIDED_CHIP_WIDTH,
+  DOUBLE_SIDED_CHIP_WIDTH,
   NET_LABEL_WIDTH,
   NET_LABEL_HEIGHT,
   type Pin,
@@ -95,7 +97,7 @@ export function useSchematicState() {
         })
       }
 
-      const initialWidth = 2
+      const initialWidth = calculateChipWidth(initialPins)
       const initialHeight = calculateChipHeight(initialPins)
 
       // Calculate top-left position from center, then snap to grid (same as dragging)
@@ -368,8 +370,9 @@ export function useSchematicState() {
             const newPins = [...box.pins, newPin]
 
             const newHeight = calculateChipHeight(newPins)
+            const newWidth = calculateChipWidth(newPins)
 
-            return { ...box, pins: newPins, height: newHeight }
+            return { ...box, pins: newPins, height: newHeight, width: newWidth }
           }
           return box
         }),
@@ -434,7 +437,8 @@ export function useSchematicState() {
       prevBoxes.map((box) => {
         if (box.id === boxId && box.type === "chip") {
           const newHeight = calculateChipHeight(updatedPins)
-          return { ...box, pins: updatedPins, height: newHeight }
+          const newWidth = calculateChipWidth(updatedPins)
+          return { ...box, pins: updatedPins, height: newHeight, width: newWidth }
         }
         return box
       }),
@@ -561,6 +565,14 @@ export function useSchematicState() {
     const maxHeight = Math.max(leftHeight, rightHeight)
 
     return Math.max(GRID_SIZE * 2, maxHeight)
+  }
+
+  const calculateChipWidth = (pins: Pin[]): number => {
+    const hasLeft = pins.some((p) => p.side === "left")
+    const hasRight = pins.some((p) => p.side === "right")
+    return hasLeft && hasRight
+      ? DOUBLE_SIDED_CHIP_WIDTH
+      : SINGLE_SIDED_CHIP_WIDTH
   }
 
   // Helper function to compute pin margins from actual pin positions
@@ -861,7 +873,7 @@ export function useSchematicState() {
         const newId = `loaded-box-${uuidv4()}-${index}`
         let type: "chip" | "passive" = "chip"
         let isPassiveFromFile = false
-        let width = 2
+        let width = SINGLE_SIDED_CHIP_WIDTH
         let height = GRID_SIZE * 2
         let rotation: 0 | 90 | 180 | 270 = 0
 
@@ -903,8 +915,9 @@ export function useSchematicState() {
           // Use the helper function to compute margins from actual pin positions
           const computedPins = computePinMarginsFromPositions(b.pins, b)
           pins.push(...computedPins)
-          // Calculate height based on computed pins
+          // Calculate size based on computed pins
           height = calculateChipHeight(computedPins)
+          width = calculateChipWidth(computedPins)
         }
 
         // Calculate position after height is finalized
@@ -1233,7 +1246,7 @@ export function useSchematicState() {
       const newId = b.boxId || `loaded-box-${uuidv4()}-${index}`
       let type: "chip" | "passive" = "chip"
       let isPassiveFromFile = false
-      let width = 2
+      let width = SINGLE_SIDED_CHIP_WIDTH
       let height = GRID_SIZE * 2
       let rotation: 0 | 90 | 180 | 270 = 0
 
@@ -1265,6 +1278,10 @@ export function useSchematicState() {
         const maxPinsHorizontal = Math.max(b.leftPinCount, b.rightPinCount)
         const calculatedChipHeight = maxPinsHorizontal * GRID_SIZE + GRID_SIZE
         height = Math.max(GRID_SIZE * 2, calculatedChipHeight)
+        width =
+          b.leftPinCount > 0 && b.rightPinCount > 0
+            ? DOUBLE_SIDED_CHIP_WIDTH
+            : SINGLE_SIDED_CHIP_WIDTH
       }
 
       let appX = b.centerX
