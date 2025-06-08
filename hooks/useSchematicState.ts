@@ -23,7 +23,10 @@ import {
   NET_LABEL_HEIGHT,
   type Pin,
 } from "@/types/schematic"
-import { getEndpointPosition } from "@/lib/schematic-utils"
+import {
+  getEndpointPosition,
+  getEffectiveAnchorSide,
+} from "@/lib/schematic-utils"
 import { snapToGrid, snapToHalfGrid } from "@/lib/geometry"
 
 export function useSchematicState() {
@@ -725,7 +728,10 @@ export function useSchematicState() {
       .map((box) => ({
         netId: box.name, // Use box name as netId (displayed label)
         netLabelId: box.id, // Use box id as netLabelId (unique identifier)
-        anchorPosition: box.anchorSide || "left",
+        anchorPosition: getEffectiveAnchorSide(
+          box.anchorSide || "left",
+          box.rotation,
+        ),
         x: box.x,
         y: -box.y, // Convert to standard Y+ up coordinate system
       }))
