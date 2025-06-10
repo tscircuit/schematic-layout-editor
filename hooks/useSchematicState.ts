@@ -586,7 +586,7 @@ export function useSchematicState() {
     const result: Pin[] = []
 
     // Find unique X positions to determine left/right sides
-    const uniqueX = [...new Set(pins.map(p => p.x))].sort((a, b) => a - b)
+    const uniqueX = [...new Set(pins.map((p) => p.x))].sort((a, b) => a - b)
     const leftX = uniqueX[0]
     const rightX = uniqueX[uniqueX.length - 1]
 
@@ -643,7 +643,11 @@ export function useSchematicState() {
       const pinsOnSameSide = box.pins
         .filter((p) => p.side === pin.side)
         .sort((a, b) => a.index - b.index)
-      const indexInSide = pinsOnSameSide.findIndex((p) => p.id === pin.id)
+      let indexInSide = pinsOnSameSide.findIndex((p) => p.id === pin.id)
+
+      if (pin.side === "right") {
+        indexInSide = pinsOnSameSide.length - 1 - indexInSide
+      }
 
       // Calculate base offset for each side
       let baseOffset = 0
@@ -1021,7 +1025,6 @@ export function useSchematicState() {
         (p, index) => {
           const newId = `loaded-conn-${uuidv4()}-${index}`
           const appPath = p.points.map((pt) => ({ x: pt.x, y: -pt.y }))
-          
 
           // Convert from LayoutPointRef to ConnectionEndpointSource
           let fromTarget: ConnectionEndpointSource
@@ -1030,7 +1033,7 @@ export function useSchematicState() {
           } else if ("netLabelId" in p.from || "netId" in p.from) {
             // Handle net label connections (both new format with netLabelId and old format with netId)
             let netLabelBox: Box | undefined
-            
+
             // First try netLabelId mapping if it exists
             if ("netLabelId" in p.from) {
               const actualBoxId = netLabelIdMapping.get(p.from.netLabelId)
@@ -1038,14 +1041,15 @@ export function useSchematicState() {
                 (b) => b.type === "net-label" && b.id === actualBoxId,
               )
             }
-            
+
             // If netLabelId mapping failed or doesn't exist, try finding by netId/name
             if (!netLabelBox && "netId" in p.from) {
               netLabelBox = loadedBoxesState.find(
-                (b) => b.type === "net-label" && b.name === (p.from as any).netId,
+                (b) =>
+                  b.type === "net-label" && b.name === (p.from as any).netId,
               )
             }
-            
+
             if (netLabelBox) {
               fromTarget = {
                 type: "pin",
@@ -1083,21 +1087,28 @@ export function useSchematicState() {
                 }
               } else {
                 // For chips: find by matching against original pin positions
-                const originalBox = loadedData.boxes.find(box => box.boxId === fromBox.name)
-                const originalPin = originalBox?.pins.find(op => op.pinNumber === targetPinNumber)
+                const originalBox = loadedData.boxes.find(
+                  (box) => box.boxId === fromBox.name,
+                )
+                const originalPin = originalBox?.pins.find(
+                  (op) => op.pinNumber === targetPinNumber,
+                )
                 if (originalPin) {
                   // Find the corresponding pin in the loaded box by position
                   const tolerance = 0.001
-                  targetPin = fromBox.pins.find(pin => {
-                    const pinPos = getEndpointPosition(
-                      { type: "pin", boxId: fromBox.id, pinId: pin.id },
-                      loadedBoxesState,
-                      []
-                    )
-                    return pinPos && 
-                           Math.abs(pinPos.x - originalPin.x) < tolerance && 
-                           Math.abs(pinPos.y - (-originalPin.y)) < tolerance // Convert Y coordinate
-                  }) || fromBox.pins[0]
+                  targetPin =
+                    fromBox.pins.find((pin) => {
+                      const pinPos = getEndpointPosition(
+                        { type: "pin", boxId: fromBox.id, pinId: pin.id },
+                        loadedBoxesState,
+                        [],
+                      )
+                      return (
+                        pinPos &&
+                        Math.abs(pinPos.x - originalPin.x) < tolerance &&
+                        Math.abs(pinPos.y - -originalPin.y) < tolerance
+                      ) // Convert Y coordinate
+                    }) || fromBox.pins[0]
                 } else {
                   // Fallback to sequential numbering
                   const sortedPins = [...fromBox.pins].sort((a, b) => {
@@ -1137,7 +1148,7 @@ export function useSchematicState() {
           } else if ("netLabelId" in p.to || "netId" in p.to) {
             // Handle net label connections (both new format with netLabelId and old format with netId)
             let netLabelBox: Box | undefined
-            
+
             // First try netLabelId mapping if it exists
             if ("netLabelId" in p.to) {
               const actualBoxId = netLabelIdMapping.get(p.to.netLabelId)
@@ -1145,14 +1156,14 @@ export function useSchematicState() {
                 (b) => b.type === "net-label" && b.id === actualBoxId,
               )
             }
-            
+
             // If netLabelId mapping failed or doesn't exist, try finding by netId/name
             if (!netLabelBox && "netId" in p.to) {
               netLabelBox = loadedBoxesState.find(
                 (b) => b.type === "net-label" && b.name === (p.to as any).netId,
               )
             }
-            
+
             if (netLabelBox) {
               toTarget = {
                 type: "pin",
@@ -1186,21 +1197,28 @@ export function useSchematicState() {
                 }
               } else {
                 // For chips: find by matching against original pin positions
-                const originalBox = loadedData.boxes.find(box => box.boxId === toBox.name)
-                const originalPin = originalBox?.pins.find(op => op.pinNumber === targetPinNumber)
+                const originalBox = loadedData.boxes.find(
+                  (box) => box.boxId === toBox.name,
+                )
+                const originalPin = originalBox?.pins.find(
+                  (op) => op.pinNumber === targetPinNumber,
+                )
                 if (originalPin) {
                   // Find the corresponding pin in the loaded box by position
                   const tolerance = 0.001
-                  targetPin = toBox.pins.find(pin => {
-                    const pinPos = getEndpointPosition(
-                      { type: "pin", boxId: toBox.id, pinId: pin.id },
-                      loadedBoxesState,
-                      []
-                    )
-                    return pinPos && 
-                           Math.abs(pinPos.x - originalPin.x) < tolerance && 
-                           Math.abs(pinPos.y - (-originalPin.y)) < tolerance // Convert Y coordinate
-                  }) || toBox.pins[0]
+                  targetPin =
+                    toBox.pins.find((pin) => {
+                      const pinPos = getEndpointPosition(
+                        { type: "pin", boxId: toBox.id, pinId: pin.id },
+                        loadedBoxesState,
+                        [],
+                      )
+                      return (
+                        pinPos &&
+                        Math.abs(pinPos.x - originalPin.x) < tolerance &&
+                        Math.abs(pinPos.y - -originalPin.y) < tolerance
+                      ) // Convert Y coordinate
+                    }) || toBox.pins[0]
                 } else {
                   // Fallback to sequential numbering
                   const sortedPins = [...toBox.pins].sort((a, b) => {
